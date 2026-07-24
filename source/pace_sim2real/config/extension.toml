@@ -1,0 +1,40 @@
+[package]
+# Semantic Versioning is used: https://semver.org/
+version = "0.1.2"
+
+# Basic metadata
+category    = "isaaclab"
+readme      = "README.md"
+
+title       = "PACE Sim-to-Real Pipeline"
+author      = "Filip Bjelonic"
+maintainer  = "Filip Bjelonic"
+description = "PACE software for sim-to-real transfer of legged robots"
+repository  = "https://github.com/leggedrobotics/pace-sim2real"
+
+keywords = [
+    "isaaclab",
+    "sim2real",
+    "reinforcement-learning",
+    "robotics",
+    "pace",
+]
+
+[dependencies]
+"isaaclab"        = {}
+"isaaclab_assets" = {}
+"isaaclab_mimic"  = {}
+"isaaclab_rl"     = {}
+"isaaclab_tasks"  = {}
+# NOTE: Add additional Isaac Lab / Omniverse extensions here (not pip packages).
+
+[[python.module]]
+name = "pace_sim2real"
+
+[isaaclab_settings]
+# apt dependencies (system packages), if any:
+# apt_deps = ["libboost-all-dev"]
+
+# ROS workspace, if you ever need one:
+# ros_ws = "path/from/extension_root/to/ros_ws"
+
