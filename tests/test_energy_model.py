@@ -6,7 +6,8 @@ from pace_sim2real.energy import EnergyAccumulator, compute_power_components
 def test_pace_power_equations_and_regeneration() -> None:
     torque = torch.tensor([[2.0, -1.0], [1.0, 1.0]])
     velocity = torch.tensor([[3.0, 1.0], [-2.0, -1.0]])
-    mass = torch.tensor([[2.0, 3.0], [2.0, 3.0]])
+    # PhysX may return masses on a different device/precision than body state.
+    mass = torch.tensor([[2.0, 3.0], [2.0, 3.0]], dtype=torch.float64)
     com_velocity = torch.zeros(2, 2, 3)
     com_velocity[0, :, 2] = torch.tensor([1.0, -0.5])
 
@@ -24,6 +25,7 @@ def test_pace_power_equations_and_regeneration() -> None:
     torch.testing.assert_close(power.mechanical, torch.tensor([5.0, -1.5]))
     torch.testing.assert_close(power.potential, torch.tensor([5.0, 0.0]))
     torch.testing.assert_close(power.total, torch.tensor([10.6, -1.2]))
+    assert power.potential.dtype == com_velocity.dtype
 
 
 def test_accumulator_integrates_every_physics_substep() -> None:

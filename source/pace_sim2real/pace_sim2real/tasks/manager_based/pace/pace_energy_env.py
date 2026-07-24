@@ -28,6 +28,14 @@ class PaceEnergyRLEnv(ManagerBasedRLEnv):
             dtype=robot.data.joint_pos.dtype,
         )
         apply_identified_parameters(robot, parameters, cfg.pace_identification.joint_order)
+        # PhysX exposes default masses on the host in Isaac Sim 5.1. Mass
+        # randomization is disabled for this calibrated environment, so keep a
+        # frozen device-local copy instead of transferring it at every 400 Hz
+        # physics substep.
+        self._pace_body_mass = robot.data.default_mass.to(
+            device=self.device,
+            dtype=robot.data.body_com_lin_vel_w.dtype,
+        ).clone()
         self.energy_accumulator = EnergyAccumulator(
             self.num_envs,
             device=self.device,
@@ -39,7 +47,7 @@ class PaceEnergyRLEnv(ManagerBasedRLEnv):
         power = compute_power_components(
             robot.data.applied_torque,
             robot.data.joint_vel,
-            robot.data.default_mass,
+            self._pace_body_mass,
             robot.data.body_com_lin_vel_w,
             electrical_coefficient=self.cfg.pace_energy.electrical_coefficient,
             regeneration_coefficient=self.cfg.pace_energy.regeneration_coefficient,

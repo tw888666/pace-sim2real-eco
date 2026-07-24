@@ -60,6 +60,12 @@ def compute_power_components(
     if body_mass.ndim != 2 or body_mass.shape[-1] != body_com_linear_velocity_w.shape[-2]:
         raise ValueError("body_mass must have shape (num_envs|1, num_bodies)")
 
+    # Isaac Sim 5.1 may expose rigid-body masses as a CPU tensor even when
+    # body state tensors live on CUDA. Match both device and precision before
+    # evaluating potential power. In the PACE environment this is normally a
+    # no-op because a device-local frozen mass tensor is cached at startup.
+    body_mass = body_mass.to(body_com_linear_velocity_w)
+
     alpha = torch.as_tensor(
         electrical_coefficient,
         dtype=applied_torque.dtype,
