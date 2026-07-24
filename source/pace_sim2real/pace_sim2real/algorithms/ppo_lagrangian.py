@@ -17,6 +17,20 @@ from rsl_rl.storage import RolloutStorage
 from rsl_rl.utils import resolve_callable, resolve_obs_groups, resolve_optimizer
 
 
+_DEPRECATED_MODEL_CFG_KEYS = (
+    "stochastic",
+    "init_noise_std",
+    "noise_std_type",
+    "state_dependent_std",
+)
+
+
+def _remove_deprecated_model_cfg(model_cfg: dict) -> None:
+    """Remove Isaac Lab compatibility fields rejected by RSL-RL 5.x models."""
+    for key in _DEPRECATED_MODEL_CFG_KEYS:
+        model_cfg.pop(key, None)
+
+
 def normalized_lagrangian_actor_loss(
     reward_surrogate_loss: torch.Tensor,
     cost_surrogate_loss: torch.Tensor,
@@ -325,6 +339,13 @@ class PacePPOLagrangian(PPO):
         actor_class = resolve_callable(cfg["actor"].pop("class_name"))
         critic_class = resolve_callable(cfg["critic"].pop("class_name"))
         cost_critic_class = resolve_callable(cfg["cost_critic"].pop("class_name"))
+        # Isaac Lab's compatibility helper migrates the built-in actor and
+        # critic, but it does not know about our additional cost critic. Its
+        # config therefore still contains deprecated placeholder fields that
+        # RSL-RL 5.x model constructors reject. Sanitize all three model
+        # dictionaries here so direct construction follows the same contract.
+        for model_name in ("actor", "critic", "cost_critic"):
+            _remove_deprecated_model_cfg(cfg[model_name])
         cfg["obs_groups"] = resolve_obs_groups(obs, cfg["obs_groups"], ["actor", "critic", "cost_critic"])
 
         actor = actor_class(obs, cfg["obs_groups"], "actor", env.num_actions, **cfg["actor"]).to(device)

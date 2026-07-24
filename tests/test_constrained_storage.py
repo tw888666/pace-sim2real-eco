@@ -67,6 +67,12 @@ def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
             "hidden_dims": [8],
             "activation": "elu",
             "obs_normalization": False,
+            # Isaac Lab leaves these compatibility fields on custom models;
+            # RSL-RL 5.x no longer accepts them in MLPModel.__init__.
+            "stochastic": False,
+            "init_noise_std": 1.0,
+            "noise_std_type": "scalar",
+            "state_dependent_std": False,
         },
         "algorithm": {
             "class_name": "pace_sim2real.algorithms:PacePPOLagrangian",
