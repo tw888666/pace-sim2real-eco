@@ -28,6 +28,18 @@ parser.add_argument(
 parser.add_argument("--seed", type=int, default=None, help="Seed used for the environment")
 parser.add_argument("--max_iterations", type=int, default=None, help="RL Policy training iterations.")
 parser.add_argument(
+    "--energy_budget_j",
+    type=float,
+    default=None,
+    help="Override the 20 s PACE model-energy budget in joules.",
+)
+parser.add_argument(
+    "--dual_state",
+    type=str,
+    default=None,
+    help="Read the externally evaluated Lagrange multiplier from this atomic JSON state.",
+)
+parser.add_argument(
     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
 )
 parser.add_argument("--export_io_descriptors", action="store_true", default=False, help="Export IO descriptors.")
@@ -56,9 +68,9 @@ import platform
 from packaging import version
 
 # check minimum supported rsl-rl version
-RSL_RL_VERSION = "3.0.1"
+RSL_RL_VERSION = "5.0.1"
 installed_version = metadata.version("rsl-rl-lib")
-if version.parse(installed_version) < version.parse(RSL_RL_VERSION):
+if version.parse(installed_version) != version.parse(RSL_RL_VERSION):
     if platform.system() == "Windows":
         cmd = [r".\isaaclab.bat", "-p", "-m", "pip", "install", f"rsl-rl-lib=={RSL_RL_VERSION}"]
     else:
@@ -97,6 +109,7 @@ from isaaclab_tasks.utils import get_checkpoint_path
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import pace_sim2real.tasks  # noqa: F401
+from pace_sim2real.dual import load_dual_state
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -118,6 +131,20 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # note: certain randomizations occur in the environment initialization so we set the seed here
     env_cfg.seed = agent_cfg.seed
     env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
+    if args_cli.energy_budget_j is not None:
+        if not hasattr(env_cfg, "pace_energy"):
+            raise ValueError("--energy_budget_j is only valid for a PACE energy environment")
+        env_cfg.pace_energy.episode_budget_j = args_cli.energy_budget_j
+
+    dual_state = None
+    if args_cli.dual_state is not None:
+        dual_state = load_dual_state(args_cli.dual_state)
+        if not hasattr(env_cfg, "pace_energy"):
+            raise ValueError("--dual_state is only valid for a PACE constrained environment")
+        if args_cli.energy_budget_j is None:
+            env_cfg.pace_energy.episode_budget_j = dual_state.budget_j
+        elif abs(args_cli.energy_budget_j - dual_state.budget_j) > 1.0e-6:
+            raise ValueError("--energy_budget_j differs from the budget recorded in --dual_state")
 
     # multi-gpu training configuration
     if args_cli.distributed:
@@ -192,6 +219,14 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         print(f"[INFO]: Loading model checkpoint from: {resume_path}")
         # load previously trained model
         runner.load(resume_path)
+    if dual_state is not None:
+        if not hasattr(runner.alg, "set_lagrangian_multiplier"):
+            raise TypeError("the selected algorithm cannot consume a PPO-Lagrangian dual state")
+        runner.alg.set_lagrangian_multiplier(dual_state.multiplier)
+        print(
+            f"[INFO]: Loaded dual cycle {dual_state.last_cycle_id} with "
+            f"lambda={dual_state.multiplier:.8f}, budget={dual_state.budget_j:.3f} J"
+        )
 
     # dump the configuration into log-directory
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
@@ -200,7 +235,14 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     dump_pickle(os.path.join(log_dir, "params", "agent.pkl"), agent_cfg)
 
     # run training
-    runner.learn(num_learning_iterations=agent_cfg.max_iterations, init_at_random_ep_len=True)
+    # A PACE cost episode represents an actual 20 s energy budget. Randomizing
+    # only the episode-length counter would create partial episodes whose prior
+    # energy is unknown, so constrained runs must start at a real reset.
+    randomize_episode_phase = not hasattr(env_cfg, "pace_energy")
+    runner.learn(
+        num_learning_iterations=agent_cfg.max_iterations,
+        init_at_random_ep_len=randomize_episode_phase,
+    )
 
     # close the simulator
     env.close()
@@ -211,4 +253,3 @@ if __name__ == "__main__":
     main()
     # close sim app
     simulation_app.close()
-

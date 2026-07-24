@@ -66,11 +66,10 @@ _build
 /datasets/
 
 # Tests
-tests/
+# Keep project tests under version control. Runtime caches remain ignored above.
 
 # Docker history
 .isaac-lab-docker-history
 
 # PACE specific
 **/data/*
-

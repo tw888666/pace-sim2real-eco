@@ -20,8 +20,8 @@ class PaceDCMotor(DCMotor):
     """Pace DC Motor actuator model with encoder bias and action delay.
 
     The actuator models a DC motor whose controller receives joint positions in the encoder
-    frame by adding a per-joint encoder bias to the true joint positions. In other words,
-    the controller operates on biased (encoder) positions rather than the true joint positions.
+    frame. PACE uses ``q_enc = q_sim - bias``, so the controller operates on encoder positions
+    rather than the simulator's true joint positions.
 
     The torque command computed by the PD controller is applied after a configurable delay
     (in simulation steps) to represent latency between command calculation and actuation.
@@ -60,8 +60,7 @@ class PaceDCMotor(DCMotor):
     def compute(
         self, control_action: ArticulationActions, joint_pos: torch.Tensor, joint_vel: torch.Tensor
     ) -> ArticulationActions:
-        # compute actuator model with encoder bias added to joint positions (joint position in encoder frame, not simulation frame)
+        # Convert once from simulator coordinates to encoder coordinates.
         control_action_sim = super().compute(control_action, joint_pos - self.encoder_bias, joint_vel)
         control_action_sim.joint_efforts = self.torques_delay_buffer.compute(control_action_sim.joint_efforts)
         return control_action_sim
-

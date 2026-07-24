@@ -1,0 +1,96 @@
+import torch
+from tensordict import TensorDict
+
+from pace_sim2real.algorithms import (
+    ConstrainedRolloutStorage,
+    PacePPOLagrangian,
+    normalized_lagrangian_actor_loss,
+)
+
+
+def _storage(last_transition_done: bool) -> ConstrainedRolloutStorage:
+    observations = TensorDict({"policy": torch.zeros(1, 2)}, batch_size=[1])
+    storage = ConstrainedRolloutStorage("rl", 1, 2, observations, [1], "cpu")
+    storage.costs[:, 0, 0] = 1.0
+    storage.cost_values.zero_()
+    storage.cost_dones[1, 0, 0] = int(last_transition_done)
+    return storage
+
+
+def test_cost_timeout_is_terminal_and_does_not_bootstrap() -> None:
+    storage = _storage(last_transition_done=True)
+    storage.compute_cost_returns(torch.tensor([[10.0]]), gamma=1.0, lam=1.0)
+    torch.testing.assert_close(storage.cost_returns[:, 0, 0], torch.tensor([2.0, 1.0]))
+
+
+def test_ordinary_rollout_boundary_bootstraps_cost_critic() -> None:
+    storage = _storage(last_transition_done=False)
+    storage.compute_cost_returns(torch.tensor([[10.0]]), gamma=1.0, lam=1.0)
+    torch.testing.assert_close(storage.cost_returns[:, 0, 0], torch.tensor([12.0, 11.0]))
+
+
+def test_actor_loss_normalizes_only_policy_surrogates() -> None:
+    loss = normalized_lagrangian_actor_loss(
+        torch.tensor(2.0),
+        torch.tensor(4.0),
+        lagrangian_multiplier=3.0,
+        entropy=torch.tensor([5.0]),
+        entropy_coefficient=0.1,
+    )
+    torch.testing.assert_close(loss, torch.tensor(3.0))
+
+
+def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
+    class DummyEnv:
+        num_envs = 4
+        num_actions = 2
+
+    obs = TensorDict({"policy": torch.randn(4, 3)}, batch_size=[4])
+    cfg = {
+        "num_steps_per_env": 2,
+        "obs_groups": {"actor": ["policy"], "critic": ["policy"], "cost_critic": ["policy"]},
+        "actor": {
+            "class_name": "MLPModel",
+            "hidden_dims": [8],
+            "activation": "elu",
+            "obs_normalization": False,
+            "distribution_cfg": {"class_name": "GaussianDistribution", "init_std": 0.5, "std_type": "scalar"},
+        },
+        "critic": {
+            "class_name": "MLPModel",
+            "hidden_dims": [8],
+            "activation": "elu",
+            "obs_normalization": False,
+        },
+        "cost_critic": {
+            "class_name": "MLPModel",
+            "hidden_dims": [8],
+            "activation": "elu",
+            "obs_normalization": False,
+        },
+        "algorithm": {
+            "class_name": "pace_sim2real.algorithms:PacePPOLagrangian",
+            "num_learning_epochs": 1,
+            "num_mini_batches": 1,
+            "schedule": "fixed",
+            "desired_kl": 0.01,
+        },
+        "multi_gpu": None,
+    }
+    algorithm = PacePPOLagrangian.construct_algorithm(obs, DummyEnv(), cfg, "cpu")
+    for step in range(2):
+        algorithm.act(obs)
+        dones = torch.zeros(4, dtype=torch.long)
+        if step == 1:
+            dones[0] = 1
+        algorithm.process_env_step(
+            obs,
+            rewards=torch.ones(4),
+            dones=dones,
+            extras={"pace_cost": torch.full((4,), 0.1)},
+        )
+    algorithm.compute_returns(obs)
+    losses = algorithm.update()
+    assert "cost_value" in losses
+    assert "cost_explained_variance" in losses
+    assert algorithm.constrained_storage.step == 0
