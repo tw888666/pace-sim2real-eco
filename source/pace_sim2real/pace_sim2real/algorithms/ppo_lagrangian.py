@@ -336,6 +336,8 @@ class PacePPOLagrangian(PPO):
             raise NotImplementedError("PACE PPO-Lagrangian is currently validated for one GPU per run")
         algorithm_cfg = cfg["algorithm"]
         alg_class = resolve_callable(algorithm_cfg.pop("class_name"))
+        if algorithm_cfg.pop("share_cnn_encoders", False):
+            raise NotImplementedError("PACE PPO-Lagrangian currently supports independent MLP encoders only")
         actor_class = resolve_callable(cfg["actor"].pop("class_name"))
         critic_class = resolve_callable(cfg["critic"].pop("class_name"))
         cost_critic_class = resolve_callable(cfg["cost_critic"].pop("class_name"))

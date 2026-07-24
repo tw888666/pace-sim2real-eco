@@ -76,6 +76,8 @@ def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
         },
         "algorithm": {
             "class_name": "pace_sim2real.algorithms:PacePPOLagrangian",
+            # RSL-RL consumes this construction-only option before PPO.__init__.
+            "share_cnn_encoders": False,
             "num_learning_epochs": 1,
             "num_mini_batches": 1,
             "schedule": "fixed",
@@ -100,3 +102,9 @@ def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
     assert "cost_value" in losses
     assert "cost_explained_variance" in losses
     assert algorithm.constrained_storage.step == 0
+
+    algorithm.set_lagrangian_multiplier(2.5)
+    saved = algorithm.save()
+    algorithm.set_lagrangian_multiplier(0.0)
+    assert algorithm.load(saved, load_cfg=None, strict=True)
+    assert algorithm.lagrangian_multiplier == 2.5
