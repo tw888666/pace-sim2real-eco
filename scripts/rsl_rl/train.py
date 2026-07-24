@@ -84,12 +84,13 @@ if version.parse(installed_version) != version.parse(RSL_RL_VERSION):
 
 """Rest everything follows."""
 
-import gymnasium as gym
+import logging
 import os
-import torch
+import time
 from datetime import datetime
 
-import omni
+import gymnasium as gym
+import torch
 from rsl_rl.runners import DistillationRunner, OnPolicyRunner
 
 from isaaclab.envs import (
@@ -100,9 +101,9 @@ from isaaclab.envs import (
     multi_agent_to_single_agent,
 )
 from isaaclab.utils.dict import print_dict
-from isaaclab.utils.io import dump_pickle, dump_yaml
+from isaaclab.utils.io import dump_yaml
 
-from isaaclab_rl.rsl_rl import RslRlBaseRunnerCfg, RslRlVecEnvWrapper
+from isaaclab_rl.rsl_rl import RslRlBaseRunnerCfg, RslRlVecEnvWrapper, handle_deprecated_rsl_rl_cfg
 
 import isaaclab_tasks  # noqa: F401
 from isaaclab_tasks.utils import get_checkpoint_path
@@ -110,6 +111,9 @@ from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import pace_sim2real.tasks  # noqa: F401
 from pace_sim2real.dual import load_dual_state
+
+# import logger
+logger = logging.getLogger(__name__)
 
 torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
@@ -127,10 +131,18 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         args_cli.max_iterations if args_cli.max_iterations is not None else agent_cfg.max_iterations
     )
 
+    # normalize legacy actor/critic fields to the RSL-RL 5.x schema
+    agent_cfg = handle_deprecated_rsl_rl_cfg(agent_cfg, installed_version)
+
     # set the environment seed
     # note: certain randomizations occur in the environment initialization so we set the seed here
     env_cfg.seed = agent_cfg.seed
     env_cfg.sim.device = args_cli.device if args_cli.device is not None else env_cfg.sim.device
+    if args_cli.distributed and args_cli.device is not None and "cpu" in args_cli.device:
+        raise ValueError(
+            "Distributed training is not supported when using CPU device. "
+            "Please use GPU device (e.g., --device cuda) for distributed training."
+        )
     if args_cli.energy_budget_j is not None:
         if not hasattr(env_cfg, "pace_energy"):
             raise ValueError("--energy_budget_j is only valid for a PACE energy environment")
@@ -172,7 +184,7 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     if isinstance(env_cfg, ManagerBasedRLEnvCfg):
         env_cfg.export_io_descriptors = args_cli.export_io_descriptors
     else:
-        omni.log.warn(
+        logger.warning(
             "IO descriptors are only supported for manager based RL environments. No IO descriptors will be exported."
         )
 
@@ -201,6 +213,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         print("[INFO] Recording videos during training.")
         print_dict(video_kwargs, nesting=4)
         env = gym.wrappers.RecordVideo(env, **video_kwargs)
+
+    start_time = time.time()
 
     # wrap around environment for rsl-rl
     env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
@@ -231,8 +245,6 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # dump the configuration into log-directory
     dump_yaml(os.path.join(log_dir, "params", "env.yaml"), env_cfg)
     dump_yaml(os.path.join(log_dir, "params", "agent.yaml"), agent_cfg)
-    dump_pickle(os.path.join(log_dir, "params", "env.pkl"), env_cfg)
-    dump_pickle(os.path.join(log_dir, "params", "agent.pkl"), agent_cfg)
 
     # run training
     # A PACE cost episode represents an actual 20 s energy budget. Randomizing
@@ -243,6 +255,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         num_learning_iterations=agent_cfg.max_iterations,
         init_at_random_ep_len=randomize_episode_phase,
     )
+
+    print(f"Training time: {round(time.time() - start_time, 2)} seconds")
 
     # close the simulator
     env.close()
