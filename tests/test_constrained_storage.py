@@ -108,3 +108,31 @@ def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
     algorithm.set_lagrangian_multiplier(0.0)
     assert algorithm.load(saved, load_cfg=None, strict=True)
     assert algorithm.lagrangian_multiplier == 2.5
+
+    # A budget change invalidates the scale of the saved cost critic. Selective
+    # resume must preserve its freshly initialized/reinitialized parameters and
+    # multiplier while restoring the locomotion policy and iteration state.
+    with torch.no_grad():
+        for parameter in algorithm.cost_critic.parameters():
+            parameter.add_(1.0)
+    reinitialized_cost_state = {
+        name: value.clone() for name, value in algorithm.cost_critic.state_dict().items()
+    }
+    algorithm.set_lagrangian_multiplier(0.0)
+    assert algorithm.load(
+        saved,
+        load_cfg={
+            "actor": True,
+            "critic": True,
+            "optimizer": True,
+            "iteration": True,
+            "rnd": True,
+            "cost_critic": False,
+            "cost_optimizer": False,
+            "lagrangian_multiplier": False,
+        },
+        strict=True,
+    )
+    assert algorithm.lagrangian_multiplier == 0.0
+    for name, value in algorithm.cost_critic.state_dict().items():
+        torch.testing.assert_close(value, reinitialized_cost_state[name])

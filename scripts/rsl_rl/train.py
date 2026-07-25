@@ -40,6 +40,12 @@ parser.add_argument(
     help="Read the externally evaluated Lagrange multiplier from this atomic JSON state.",
 )
 parser.add_argument(
+    "--reset_cost_critic_on_resume",
+    action="store_true",
+    default=False,
+    help="Resume the locomotion policy while reinitializing the cost critic, its optimizer, and the multiplier.",
+)
+parser.add_argument(
     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
 )
 parser.add_argument("--export_io_descriptors", action="store_true", default=False, help="Export IO descriptors.")
@@ -130,6 +136,8 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     agent_cfg.max_iterations = (
         args_cli.max_iterations if args_cli.max_iterations is not None else agent_cfg.max_iterations
     )
+    if args_cli.reset_cost_critic_on_resume and not agent_cfg.resume:
+        raise ValueError("--reset_cost_critic_on_resume requires --resume")
 
     # normalize legacy actor/critic fields to the RSL-RL 5.x schema
     agent_cfg = handle_deprecated_rsl_rl_cfg(agent_cfg, installed_version)
@@ -232,7 +240,22 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     if agent_cfg.resume or agent_cfg.algorithm.class_name == "Distillation":
         print(f"[INFO]: Loading model checkpoint from: {resume_path}")
         # load previously trained model
-        runner.load(resume_path)
+        load_cfg = None
+        if args_cli.reset_cost_critic_on_resume:
+            if not hasattr(runner.alg, "cost_critic"):
+                raise TypeError("--reset_cost_critic_on_resume requires a cost-constrained algorithm")
+            load_cfg = {
+                "actor": True,
+                "critic": True,
+                "optimizer": True,
+                "iteration": True,
+                "rnd": True,
+                "cost_critic": False,
+                "cost_optimizer": False,
+                "lagrangian_multiplier": False,
+            }
+            print("[INFO]: Reinitializing cost critic, cost optimizer, and checkpoint multiplier.")
+        runner.load(resume_path, load_cfg=load_cfg)
     if dual_state is not None:
         if not hasattr(runner.alg, "set_lagrangian_multiplier"):
             raise TypeError("the selected algorithm cannot consume a PPO-Lagrangian dual state")
