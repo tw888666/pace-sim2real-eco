@@ -1,0 +1,7 @@
+{
+  "budget_j": 10000.0,
+  "checkpoint_path": "/home/xy.chen/tw/isaaclab_ws/pace-sim2real/logs/dual_dev/cycle_0001/checkpoint.pt",
+  "checkpoint_sha256": "65bc5e5d58aa615c2fcbff4f0d59001a883ea102be39a310acb36deb4e444b5e",
+  "cycle_id": 1,
+  "schema_version": 1
+}

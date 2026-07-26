@@ -37,7 +37,6 @@ docker/.container.cfg
 
 # Outputs
 **/output/*
-**/outputs/*
 **/videos/*
 **/wandb/*
 **/.neptune/*
@@ -56,7 +55,6 @@ _build
 
 # RL-Games
 **/runs/*
-**/logs/*
 **/recordings/*
 
 # Pre-Trained Checkpoints
@@ -72,4 +70,4 @@ _build
 .isaac-lab-docker-history
 
 # PACE specific
-**/data/*
+# Experiment data, outputs, and logs are intentionally versioned for reproducibility.
