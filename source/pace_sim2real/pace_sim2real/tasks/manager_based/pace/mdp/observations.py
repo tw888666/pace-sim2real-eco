@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import torch
+
 from isaaclab.assets import Articulation
 from isaaclab.managers import SceneEntityCfg
 
@@ -21,3 +23,9 @@ def encoder_joint_pos_rel(env, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot
         - bias[:, asset_cfg.joint_ids]
         - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
     )
+
+
+def normalized_remaining_time(env) -> torch.Tensor:
+    """Return the finite-horizon time-to-go in ``[0, 1]`` for the cost critic."""
+    remaining = 1.0 - env.episode_length_buf.float() / float(env.max_episode_length)
+    return remaining.clamp_(0.0, 1.0).unsqueeze(-1)

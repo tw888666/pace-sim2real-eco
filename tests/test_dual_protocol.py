@@ -22,6 +22,7 @@ def _write_result(tmp_path, checkpoint, *, cycle_id=0, augmented_cost=1.2):
         success_rate=0.9,
         cost_value_initial_bias=0.01,
         cost_explained_variance=0.7,
+        schema_version=1,
     )
     result_path = tmp_path / f"result-{cycle_id}.json"
     result_path.write_text(json.dumps(asdict(result)), encoding="utf-8")
@@ -70,3 +71,58 @@ def test_freeze_checkpoint_creates_hash_addressed_read_only_request(tmp_path) ->
     assert request["cycle_id"] == 4
     assert request["checkpoint_sha256"] == file_sha256(frozen)
     assert frozen.stat().st_mode & 0o222 == 0
+
+
+def test_v2_result_exposes_unambiguous_gate_properties(tmp_path) -> None:
+    checkpoint = tmp_path / "checkpoint.pt"
+    checkpoint.write_bytes(b"immutable-v2")
+    metrics = {
+        "target_definition": "undiscounted_full_episode_return_to_go",
+        "initial": {
+            "num_samples": 2,
+            "signed_bias": -0.01,
+            "absolute_mean_bias": 0.01,
+            "mae": 0.02,
+            "rmse": 0.03,
+            "explained_variance": 0.4,
+            "target_mean": 1.0,
+            "target_std": 0.1,
+            "prediction_mean": 0.99,
+            "prediction_std": 0.1,
+        },
+        "trajectory": {
+            "num_episodes": 2,
+            "num_transitions": 4,
+            "pooled": {
+                "num_samples": 4,
+                "signed_bias": 0.0,
+                "absolute_mean_bias": 0.0,
+                "mae": 0.01,
+                "rmse": 0.02,
+                "explained_variance": 0.8,
+                "target_mean": 0.5,
+                "target_std": 0.3,
+                "prediction_mean": 0.5,
+                "prediction_std": 0.3,
+            },
+            "episode_equal_rmse": 0.02,
+        },
+        "time_bin_rmse": {"0.0-1.0": 0.02},
+        "success": None,
+        "failure": None,
+    }
+    result = DualEvaluationResult(
+        cycle_id=0,
+        checkpoint_path=str(checkpoint),
+        checkpoint_sha256=file_sha256(checkpoint),
+        budget_j=100.0,
+        num_episodes=2,
+        mean_physical_energy_j=100.0,
+        mean_augmented_cost=1.0,
+        success_rate=1.0,
+        evaluation_seed=123,
+        cost_value_metrics=metrics,
+    )
+    result.validate()
+    assert result.initial_absolute_mean_bias == 0.01
+    assert result.trajectory_explained_variance == 0.8

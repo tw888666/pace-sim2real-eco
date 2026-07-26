@@ -35,7 +35,12 @@ from isaaclab_tasks.utils.parse_cfg import load_cfg_from_registry
 
 import isaaclab_tasks  # noqa: F401
 import pace_sim2real.tasks  # noqa: F401
-from pace_sim2real.dual import DualEvaluationResult, atomic_write_json, file_sha256
+from pace_sim2real.dual import (
+    DualEvaluationResult,
+    atomic_write_json,
+    evaluate_trajectory_predictions,
+    file_sha256,
+)
 
 
 def main() -> None:
@@ -56,6 +61,7 @@ def main() -> None:
     env_cfg.sim.device = args.device
     env_cfg.pace_energy.episode_budget_j = float(request["budget_j"])
     agent_cfg.device = args.device
+    torch.manual_seed(args.seed)
 
     raw_env = gym.make(args.task, cfg=env_cfg)
     env = RslRlVecEnvWrapper(raw_env, clip_actions=agent_cfg.clip_actions)
@@ -64,21 +70,32 @@ def main() -> None:
     runner.alg.eval_mode()
 
     obs = env.get_observations().to(args.device)
-    with torch.inference_mode():
-        initial_cost_values = runner.alg.cost_critic(obs).squeeze(-1).clone()
     active = torch.ones(args.num_envs, dtype=torch.bool, device=args.device)
     accumulated_cost = torch.zeros(args.num_envs, device=args.device)
     final_cost = torch.zeros(args.num_envs, device=args.device)
     final_energy = torch.zeros(args.num_envs, device=args.device)
     success = torch.zeros(args.num_envs, dtype=torch.bool, device=args.device)
+    trajectory_values = []
+    trajectory_costs = []
+    trajectory_valid = []
+    trajectory_remaining_time = []
 
     while active.any() and simulation_app.is_running():
         with torch.inference_mode():
+            active_before_step = active.clone()
+            cost_values = runner.alg.cost_critic(obs).squeeze(-1)
+            remaining_time = 1.0 - (
+                env.unwrapped.episode_length_buf.float() / float(env.unwrapped.max_episode_length)
+            )
             actions = runner.alg.actor(obs, stochastic_output=True)
             obs, _, dones, extras = env.step(actions)
             step_cost = extras["pace_cost"].to(args.device)
-            accumulated_cost += step_cost * active
-            newly_finished = active & dones.bool()
+            trajectory_values.append(cost_values.clone())
+            trajectory_costs.append(step_cost.clone())
+            trajectory_valid.append(active_before_step)
+            trajectory_remaining_time.append(remaining_time.clone())
+            accumulated_cost += step_cost * active_before_step
+            newly_finished = active_before_step & dones.bool()
             if newly_finished.any():
                 final_cost[newly_finished] = accumulated_cost[newly_finished]
                 final_energy[newly_finished] = extras["pace_episode_energy_j"][newly_finished]
@@ -89,9 +106,13 @@ def main() -> None:
     if active.any():
         raise RuntimeError("simulation stopped before every evaluation environment completed one episode")
 
-    residual = final_cost - initial_cost_values
-    target_variance = torch.var(final_cost, unbiased=False)
-    explained_variance = 1.0 - torch.var(residual, unbiased=False) / (target_variance + 1.0e-8)
+    cost_value_metrics = evaluate_trajectory_predictions(
+        torch.stack(trajectory_values, dim=1),
+        torch.stack(trajectory_costs, dim=1),
+        torch.stack(trajectory_valid, dim=1),
+        torch.stack(trajectory_remaining_time, dim=1),
+        success,
+    )
     result = DualEvaluationResult(
         cycle_id=int(request["cycle_id"]),
         checkpoint_path=str(checkpoint),
@@ -101,9 +122,10 @@ def main() -> None:
         mean_physical_energy_j=float(final_energy.mean().item()),
         mean_augmented_cost=float(final_cost.mean().item()),
         success_rate=float(success.float().mean().item()),
-        cost_value_initial_bias=float(torch.abs(residual.mean()).item()),
-        cost_explained_variance=float(explained_variance.item()),
+        evaluation_seed=args.seed,
+        cost_value_metrics=cost_value_metrics,
     )
+    result.validate(require_checkpoint=False)
     if file_sha256(checkpoint) != request["checkpoint_sha256"]:
         raise RuntimeError("checkpoint changed during dual evaluation")
     result_path = Path(args.result).resolve() if args.result else request_path.with_name("result.json")

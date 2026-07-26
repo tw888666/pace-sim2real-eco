@@ -52,6 +52,10 @@ class PacePPOLagrangianAlgorithmCfg(RslRlPpoAlgorithmCfg):
     cost_critic_learning_rate: float = 1.0e-3
     lagrangian_multiplier_init: float = 0.0
     lagrangian_multiplier_max: float = 100.0
+    # ECO normalizes cost advantages over the complete rollout. Keep this
+    # explicit so the unnormalized definition can be run as an ablation.
+    normalize_cost_advantage: bool = True
+    critic_only: bool = False
 
 
 @configclass
@@ -60,7 +64,7 @@ class AnymalDPaceEcoPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     max_iterations = 3000
     save_interval = 100
     experiment_name = "pace_eco_anymal_d_flat"
-    obs_groups = {"actor": ["policy"], "critic": ["policy"], "cost_critic": ["policy"]}
+    obs_groups = {"actor": ["policy"], "critic": ["policy"], "cost_critic": ["policy", "cost_time"]}
     actor = RslRlMLPModelCfg(
         hidden_dims=[256, 256, 128],
         activation="elu",

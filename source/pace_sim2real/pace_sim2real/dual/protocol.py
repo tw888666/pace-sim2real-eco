@@ -12,6 +12,8 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .metrics import validate_trajectory_metrics
+
 
 def file_sha256(path: str | Path) -> str:
     digest = hashlib.sha256()
@@ -78,9 +80,13 @@ class DualEvaluationResult:
     mean_physical_energy_j: float
     mean_augmented_cost: float
     success_rate: float
-    cost_value_initial_bias: float
-    cost_explained_variance: float
-    schema_version: int = 1
+    evaluation_seed: int | None = None
+    cost_value_metrics: dict | None = None
+    # Legacy v1 fields. They remain readable so already archived evaluations
+    # can still be inspected and applied idempotently.
+    cost_value_initial_bias: float | None = None
+    cost_explained_variance: float | None = None
+    schema_version: int = 2
 
     @classmethod
     def from_dict(cls, payload: dict) -> "DualEvaluationResult":
@@ -91,20 +97,28 @@ class DualEvaluationResult:
         return cls(**payload)
 
     def validate(self, *, require_checkpoint: bool = True) -> None:
-        if self.schema_version != 1:
+        if self.schema_version not in (1, 2):
             raise ValueError(f"unsupported dual result schema {self.schema_version}")
         if self.cycle_id < 0 or self.budget_j <= 0.0 or self.num_episodes <= 0:
             raise ValueError("cycle id, budget, or episode count is invalid")
         if not 0.0 <= self.success_rate <= 1.0:
             raise ValueError("success_rate must lie in [0, 1]")
-        numeric_fields = (
+        numeric_fields = [
             self.budget_j,
             self.mean_physical_energy_j,
             self.mean_augmented_cost,
             self.success_rate,
-            self.cost_value_initial_bias,
-            self.cost_explained_variance,
-        )
+        ]
+        if self.schema_version == 1:
+            if self.cost_value_initial_bias is None or self.cost_explained_variance is None:
+                raise ValueError("v1 dual result is missing legacy cost-value metrics")
+            numeric_fields.extend((self.cost_value_initial_bias, self.cost_explained_variance))
+        else:
+            if self.evaluation_seed is None or self.evaluation_seed < 0:
+                raise ValueError("v2 dual result requires a non-negative evaluation seed")
+            if self.cost_value_metrics is None:
+                raise ValueError("v2 dual result requires complete trajectory cost-value metrics")
+            validate_trajectory_metrics(self.cost_value_metrics)
         if not all(math.isfinite(value) for value in numeric_fields):
             raise ValueError("dual result contains NaN or infinity")
         if require_checkpoint:
@@ -114,6 +128,22 @@ class DualEvaluationResult:
             actual_hash = file_sha256(checkpoint)
             if actual_hash != self.checkpoint_sha256:
                 raise ValueError("immutable checkpoint hash does not match the dual result")
+
+    @property
+    def initial_absolute_mean_bias(self) -> float:
+        if self.schema_version == 1:
+            assert self.cost_value_initial_bias is not None
+            return self.cost_value_initial_bias
+        assert self.cost_value_metrics is not None
+        return float(self.cost_value_metrics["initial"]["absolute_mean_bias"])
+
+    @property
+    def trajectory_explained_variance(self) -> float:
+        if self.schema_version == 1:
+            assert self.cost_explained_variance is not None
+            return self.cost_explained_variance
+        assert self.cost_value_metrics is not None
+        return float(self.cost_value_metrics["trajectory"]["pooled"]["explained_variance"])
 
 
 def load_dual_state(path: str | Path) -> DualState:

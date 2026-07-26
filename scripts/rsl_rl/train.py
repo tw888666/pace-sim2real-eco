@@ -46,6 +46,18 @@ parser.add_argument(
     help="Resume the locomotion policy while reinitializing the cost critic, its optimizer, and the multiplier.",
 )
 parser.add_argument(
+    "--critic_only",
+    action="store_true",
+    default=False,
+    help="Freeze actor/reward critic parameters and update only the cost critic during preheating.",
+)
+parser.add_argument(
+    "--cost_critic_warmstart",
+    type=str,
+    default=None,
+    help="Load a paired real-time offline critic artifact before critic-only preheating.",
+)
+parser.add_argument(
     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
 )
 parser.add_argument("--export_io_descriptors", action="store_true", default=False, help="Export IO descriptors.")
@@ -116,7 +128,7 @@ from isaaclab_tasks.utils import get_checkpoint_path
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import pace_sim2real.tasks  # noqa: F401
-from pace_sim2real.dual import load_dual_state
+from pace_sim2real.dual import file_sha256, load_dual_state, module_sha256
 
 # import logger
 logger = logging.getLogger(__name__)
@@ -138,6 +150,17 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     )
     if args_cli.reset_cost_critic_on_resume and not agent_cfg.resume:
         raise ValueError("--reset_cost_critic_on_resume requires --resume")
+    if args_cli.critic_only and not agent_cfg.resume:
+        raise ValueError("--critic_only requires a frozen actor loaded with --resume")
+    if args_cli.critic_only:
+        if not hasattr(agent_cfg.algorithm, "critic_only"):
+            raise TypeError("--critic_only requires a cost-constrained algorithm configuration")
+        agent_cfg.algorithm.critic_only = True
+    if args_cli.cost_critic_warmstart is not None:
+        if not args_cli.critic_only or not args_cli.reset_cost_critic_on_resume:
+            raise ValueError(
+                "--cost_critic_warmstart requires --critic_only and --reset_cost_critic_on_resume"
+            )
 
     # normalize legacy actor/critic fields to the RSL-RL 5.x schema
     agent_cfg = handle_deprecated_rsl_rl_cfg(agent_cfg, installed_version)
@@ -256,6 +279,17 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             }
             print("[INFO]: Reinitializing cost critic, cost optimizer, and checkpoint multiplier.")
         runner.load(resume_path, load_cfg=load_cfg)
+    if args_cli.cost_critic_warmstart is not None:
+        warmstart_path = os.path.abspath(args_cli.cost_critic_warmstart)
+        warmstart = torch.load(warmstart_path, map_location="cpu", weights_only=False)
+        if warmstart.get("schema_version") != 1 or warmstart.get("variant") != "real_time":
+            raise ValueError("cost critic warmstart must be a schema-v1 real_time comparison artifact")
+        if warmstart.get("source_actor_checkpoint_sha256") != file_sha256(resume_path):
+            raise ValueError("cost critic warmstart was fitted from a different frozen actor checkpoint")
+        runner.alg.cost_critic.load_state_dict(warmstart["state_dict"], strict=True)
+        if module_sha256(runner.alg.cost_critic) != warmstart["training"]["final_state_sha256"]:
+            raise RuntimeError("loaded cost critic warmstart hash does not match its training manifest")
+        print(f"[INFO]: Loaded paired real-time cost critic warmstart: {warmstart_path}")
     if dual_state is not None:
         if not hasattr(runner.alg, "set_lagrangian_multiplier"):
             raise TypeError("the selected algorithm cannot consume a PPO-Lagrangian dual state")
@@ -263,6 +297,20 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         print(
             f"[INFO]: Loaded dual cycle {dual_state.last_cycle_id} with "
             f"lambda={dual_state.multiplier:.8f}, budget={dual_state.budget_j:.3f} J"
+        )
+
+    frozen_module_hashes = None
+    if args_cli.critic_only:
+        if not hasattr(runner.alg, "set_critic_only"):
+            raise TypeError("--critic_only requires the PACE PPO-Lagrangian algorithm")
+        runner.alg.set_critic_only(True)
+        frozen_module_hashes = {
+            "actor": module_sha256(runner.alg.actor),
+            "reward_critic": module_sha256(runner.alg.critic),
+        }
+        print(
+            "[INFO]: Cost-critic-only preheating enabled with lambda=0. "
+            f"Frozen hashes: {frozen_module_hashes}"
         )
 
     # dump the configuration into log-directory
@@ -278,6 +326,18 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         num_learning_iterations=agent_cfg.max_iterations,
         init_at_random_ep_len=randomize_episode_phase,
     )
+
+    if frozen_module_hashes is not None:
+        final_hashes = {
+            "actor": module_sha256(runner.alg.actor),
+            "reward_critic": module_sha256(runner.alg.critic),
+        }
+        if final_hashes != frozen_module_hashes:
+            raise RuntimeError(
+                "critic-only invariant failed: actor, action std, or reward critic changed; "
+                f"before={frozen_module_hashes}, after={final_hashes}"
+            )
+        print(f"[INFO]: Critic-only frozen-parameter hashes verified: {final_hashes}")
 
     print(f"Training time: {round(time.time() - start_time, 2)} seconds")
 

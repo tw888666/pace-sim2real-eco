@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from isaaclab.managers import EventTermCfg as EventTerm
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 from isaaclab_assets.robots.anymal import ANYMAL_D_CFG
 from isaaclab_tasks.manager_based.locomotion.velocity.config.anymal_d.flat_env_cfg import AnymalDFlatEnvCfg
-from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import RewardsCfg
+from isaaclab_tasks.manager_based.locomotion.velocity.velocity_env_cfg import ObservationsCfg, RewardsCfg
 
 from pace_sim2real.utils import PaceDCMotorCfg
 from pace_sim2real.utils.identified_parameters import ANYMAL_D_JOINT_ORDER, ANYMAL_D_OFFICIAL_PARAMETERS
@@ -62,7 +64,23 @@ class PaceRewardsCfg(RewardsCfg):
 
 
 @configclass
+class PaceObservationsCfg(ObservationsCfg):
+    """Keep the actor observation unchanged and expose time only as cost context."""
+
+    @configclass
+    class CostTimeCfg(ObsGroup):
+        remaining_time = ObsTerm(func=mdp.normalized_remaining_time)
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+
+    cost_time: CostTimeCfg = CostTimeCfg()
+
+
+@configclass
 class AnymalDPaceEcoEnvCfg(AnymalDFlatEnvCfg):
+    observations: PaceObservationsCfg = PaceObservationsCfg()
     rewards: PaceRewardsCfg = PaceRewardsCfg()
     pace_identification: PaceIdentificationCfg = PaceIdentificationCfg()
     pace_energy: PaceEnergyCfg = PaceEnergyCfg()

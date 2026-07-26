@@ -68,7 +68,14 @@ class ConstrainedRolloutStorage(RolloutStorage):
         self.cost_values[index].copy_(transition.cost_values)
         self.cost_dones[index].copy_(transition.cost_dones.view(-1, 1))
 
-    def compute_cost_returns(self, last_values: torch.Tensor, gamma: float, lam: float) -> None:
+    def compute_cost_returns(
+        self,
+        last_values: torch.Tensor,
+        gamma: float,
+        lam: float,
+        *,
+        normalize_advantage: bool = True,
+    ) -> None:
         """Compute cost GAE; only ordinary rollout boundaries bootstrap."""
         advantage = torch.zeros_like(last_values)
         for step in reversed(range(self.num_transitions_per_env)):
@@ -78,9 +85,10 @@ class ConstrainedRolloutStorage(RolloutStorage):
             advantage = delta + next_is_not_terminal * gamma * lam * advantage
             self.cost_returns[step] = advantage + self.cost_values[step]
         self.cost_advantages = self.cost_returns - self.cost_values
-        self.cost_advantages = (self.cost_advantages - self.cost_advantages.mean()) / (
-            self.cost_advantages.std() + 1.0e-8
-        )
+        if normalize_advantage:
+            self.cost_advantages = (self.cost_advantages - self.cost_advantages.mean()) / (
+                self.cost_advantages.std() + 1.0e-8
+            )
 
     def mini_batch_generator(self, num_mini_batches: int, num_epochs: int = 8):
         if self.training_type != "rl":
@@ -136,6 +144,8 @@ class PacePPOLagrangian(PPO):
         cost_critic_learning_rate: float = 1.0e-3,
         lagrangian_multiplier_init: float = 0.0,
         lagrangian_multiplier_max: float = 100.0,
+        normalize_cost_advantage: bool = True,
+        critic_only: bool = False,
         **kwargs,
     ):
         super().__init__(actor, critic, storage, **kwargs)
@@ -150,8 +160,11 @@ class PacePPOLagrangian(PPO):
         self.cost_value_loss_coef = cost_value_loss_coef
         self.cost_critic_learning_rate = cost_critic_learning_rate
         self.lagrangian_multiplier_max = lagrangian_multiplier_max
+        self.normalize_cost_advantage = bool(normalize_cost_advantage)
+        self.critic_only = False
         self.lagrangian_multiplier = 0.0
         self.set_lagrangian_multiplier(lagrangian_multiplier_init)
+        self.set_critic_only(critic_only)
 
     @property
     def constrained_storage(self) -> ConstrainedRolloutStorage:
@@ -159,6 +172,15 @@ class PacePPOLagrangian(PPO):
 
     def set_lagrangian_multiplier(self, value: float) -> None:
         self.lagrangian_multiplier = float(min(max(value, 0.0), self.lagrangian_multiplier_max))
+
+    def set_critic_only(self, enabled: bool) -> None:
+        """Freeze actor/reward critic parameters while warming only the cost critic."""
+        self.critic_only = bool(enabled)
+        for module in (self.actor, self.critic):
+            for parameter in module.parameters():
+                parameter.requires_grad_(not self.critic_only)
+        if self.critic_only:
+            self.set_lagrangian_multiplier(0.0)
 
     def act(self, obs: TensorDict) -> torch.Tensor:
         actions = super().act(obs)
@@ -174,8 +196,9 @@ class PacePPOLagrangian(PPO):
     ) -> None:
         if "pace_cost" not in extras:
             raise KeyError("PacePPOLagrangian requires extras['pace_cost'] from PaceEnergyRLEnv")
-        self.actor.update_normalization(obs)
-        self.critic.update_normalization(obs)
+        if not self.critic_only:
+            self.actor.update_normalization(obs)
+            self.critic.update_normalization(obs)
         self.cost_critic.update_normalization(obs)
         self.transition.rewards = rewards.clone()
         self.transition.dones = dones
@@ -197,7 +220,10 @@ class PacePPOLagrangian(PPO):
     def compute_returns(self, obs: TensorDict) -> None:
         super().compute_returns(obs)
         self.constrained_storage.compute_cost_returns(
-            self.cost_critic(obs).detach(), self.cost_gamma, self.cost_lam
+            self.cost_critic(obs).detach(),
+            self.cost_gamma,
+            self.cost_lam,
+            normalize_advantage=self.normalize_cost_advantage,
         )
 
     def update(self) -> dict[str, float]:
@@ -216,59 +242,67 @@ class PacePPOLagrangian(PPO):
                     batch.advantages = (batch.advantages - batch.advantages.mean()) / (
                         batch.advantages.std() + 1.0e-8
                     )
-                    batch.cost_advantages = (batch.cost_advantages - batch.cost_advantages.mean()) / (
-                        batch.cost_advantages.std() + 1.0e-8
-                    )
+                    if self.normalize_cost_advantage:
+                        batch.cost_advantages = (batch.cost_advantages - batch.cost_advantages.mean()) / (
+                            batch.cost_advantages.std() + 1.0e-8
+                        )
 
-            self.actor(batch.observations, stochastic_output=True)
-            actions_log_prob = self.actor.get_output_log_prob(batch.actions)
-            values = self.critic(batch.observations)
-            distribution_params = tuple(self.actor.output_distribution_params)
-            entropy = self.actor.output_entropy
+            if not self.critic_only:
+                self.actor(batch.observations, stochastic_output=True)
+                actions_log_prob = self.actor.get_output_log_prob(batch.actions)
+                values = self.critic(batch.observations)
+                distribution_params = tuple(self.actor.output_distribution_params)
+                entropy = self.actor.output_entropy
 
-            if self.desired_kl is not None and self.schedule == "adaptive":
-                with torch.inference_mode():
-                    kl_mean = self.actor.get_kl_divergence(batch.old_distribution_params, distribution_params).mean()
-                    if kl_mean > self.desired_kl * 2.0:
-                        self.learning_rate = max(1.0e-5, self.learning_rate / 1.5)
-                    elif 0.0 < kl_mean < self.desired_kl / 2.0:
-                        self.learning_rate = min(1.0e-2, self.learning_rate * 1.5)
-                    for parameter_group in self.optimizer.param_groups:
-                        parameter_group["lr"] = self.learning_rate
+                if self.desired_kl is not None and self.schedule == "adaptive":
+                    with torch.inference_mode():
+                        kl_mean = self.actor.get_kl_divergence(
+                            batch.old_distribution_params, distribution_params
+                        ).mean()
+                        if kl_mean > self.desired_kl * 2.0:
+                            self.learning_rate = max(1.0e-5, self.learning_rate / 1.5)
+                        elif 0.0 < kl_mean < self.desired_kl / 2.0:
+                            self.learning_rate = min(1.0e-2, self.learning_rate * 1.5)
+                        for parameter_group in self.optimizer.param_groups:
+                            parameter_group["lr"] = self.learning_rate
 
-            ratio = torch.exp(actions_log_prob - torch.squeeze(batch.old_actions_log_prob))
-            reward_surrogate = -torch.squeeze(batch.advantages) * ratio
-            reward_surrogate_clipped = -torch.squeeze(batch.advantages) * torch.clamp(
-                ratio, 1.0 - self.clip_param, 1.0 + self.clip_param
-            )
-            reward_surrogate_loss = torch.max(reward_surrogate, reward_surrogate_clipped).mean()
-            cost_surrogate = torch.squeeze(batch.cost_advantages) * ratio
-            cost_surrogate_clipped = torch.squeeze(batch.cost_advantages) * torch.clamp(
-                ratio, 1.0 - self.clip_param, 1.0 + self.clip_param
-            )
-            cost_surrogate_loss = torch.max(cost_surrogate, cost_surrogate_clipped).mean()
+                ratio = torch.exp(actions_log_prob - torch.squeeze(batch.old_actions_log_prob))
+                reward_surrogate = -torch.squeeze(batch.advantages) * ratio
+                reward_surrogate_clipped = -torch.squeeze(batch.advantages) * torch.clamp(
+                    ratio, 1.0 - self.clip_param, 1.0 + self.clip_param
+                )
+                reward_surrogate_loss = torch.max(reward_surrogate, reward_surrogate_clipped).mean()
+                cost_surrogate = torch.squeeze(batch.cost_advantages) * ratio
+                cost_surrogate_clipped = torch.squeeze(batch.cost_advantages) * torch.clamp(
+                    ratio, 1.0 - self.clip_param, 1.0 + self.clip_param
+                )
+                cost_surrogate_loss = torch.max(cost_surrogate, cost_surrogate_clipped).mean()
 
-            if self.use_clipped_value_loss:
-                value_clipped = batch.values + (values - batch.values).clamp(-self.clip_param, self.clip_param)
-                value_loss = torch.max(
-                    (values - batch.returns).square(),
-                    (value_clipped - batch.returns).square(),
-                ).mean()
-            else:
-                value_loss = (batch.returns - values).square().mean()
+                if self.use_clipped_value_loss:
+                    value_clipped = batch.values + (values - batch.values).clamp(-self.clip_param, self.clip_param)
+                    value_loss = torch.max(
+                        (values - batch.returns).square(),
+                        (value_clipped - batch.returns).square(),
+                    ).mean()
+                else:
+                    value_loss = (batch.returns - values).square().mean()
 
-            actor_loss = normalized_lagrangian_actor_loss(
-                reward_surrogate_loss,
-                cost_surrogate_loss,
-                self.lagrangian_multiplier,
-                entropy,
-                self.entropy_coef,
-            )
-            self.optimizer.zero_grad()
-            (actor_loss + self.value_loss_coef * value_loss).backward()
-            nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
-            nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
-            self.optimizer.step()
+                actor_loss = normalized_lagrangian_actor_loss(
+                    reward_surrogate_loss,
+                    cost_surrogate_loss,
+                    self.lagrangian_multiplier,
+                    entropy,
+                    self.entropy_coef,
+                )
+                self.optimizer.zero_grad()
+                (actor_loss + self.value_loss_coef * value_loss).backward()
+                nn.utils.clip_grad_norm_(self.actor.parameters(), self.max_grad_norm)
+                nn.utils.clip_grad_norm_(self.critic.parameters(), self.max_grad_norm)
+                self.optimizer.step()
+                totals["value"] += value_loss.item()
+                totals["surrogate"] += reward_surrogate_loss.item()
+                totals["cost_surrogate"] += cost_surrogate_loss.item()
+                totals["entropy"] += entropy.mean().item()
 
             cost_values = self.cost_critic(batch.observations)
             if self.use_clipped_value_loss:
@@ -286,17 +320,15 @@ class PacePPOLagrangian(PPO):
             nn.utils.clip_grad_norm_(self.cost_critic.parameters(), self.max_grad_norm)
             self.cost_optimizer.step()
 
-            totals["value"] += value_loss.item()
             totals["cost_value"] += cost_value_loss.item()
-            totals["surrogate"] += reward_surrogate_loss.item()
-            totals["cost_surrogate"] += cost_surrogate_loss.item()
-            totals["entropy"] += entropy.mean().item()
 
         update_count = self.num_learning_epochs * self.num_mini_batches
         for name in totals:
             totals[name] /= update_count
         totals["cost_explained_variance"] = cost_explained_variance.item()
         totals["lagrangian_multiplier"] = self.lagrangian_multiplier
+        totals["critic_only"] = float(self.critic_only)
+        totals["normalize_cost_advantage"] = float(self.normalize_cost_advantage)
         storage.clear()
         return totals
 
