@@ -3,9 +3,11 @@ import math
 import torch
 
 from pace_sim2real.dual import (
+    energy_feasibility_metrics,
     evaluate_trajectory_predictions,
     regression_metrics,
     undiscounted_return_to_go,
+    validate_energy_feasibility_metrics,
     validate_trajectory_metrics,
 )
 
@@ -51,3 +53,32 @@ def test_complete_trajectory_metrics_are_exact_for_perfect_predictions() -> None
     assert math.isclose(payload["trajectory"]["pooled"]["explained_variance"], 1.0)
     assert payload["success"]["num_episodes"] == 1
     assert payload["failure"]["num_episodes"] == 1
+
+
+def test_energy_feasibility_separates_mean_excess_from_episode_violation_rate() -> None:
+    energy = torch.tensor([80.0, 110.0, 120.0, 90.0])
+    success = torch.tensor([True, True, False, True])
+    metrics = energy_feasibility_metrics(energy, success, budget_j=100.0)
+    payload = metrics.to_dict()
+    validate_energy_feasibility_metrics(payload, budget_j=100.0, num_episodes=4, success_rate=0.75)
+
+    assert metrics.num_successful_episodes == 3
+    assert math.isclose(metrics.mean_relative_budget_excess, 0.0, abs_tol=1.0e-7)
+    assert math.isclose(metrics.mean_success_energy_j, 280.0 / 3.0, rel_tol=1.0e-6)
+    assert math.isclose(metrics.mean_success_relative_budget_excess, -1.0 / 15.0, rel_tol=1.0e-6)
+    assert metrics.episode_energy_violation_rate == 0.5
+    assert math.isclose(metrics.success_conditional_energy_violation_rate, 1.0 / 3.0, rel_tol=1.0e-6)
+    assert metrics.joint_feasibility_rate == 0.5
+    assert metrics.mean_positive_energy_excess_j == 7.5
+
+
+def test_energy_feasibility_handles_no_success_without_inventing_conditional_metrics() -> None:
+    metrics = energy_feasibility_metrics(
+        torch.tensor([90.0, 110.0]),
+        torch.tensor([False, False]),
+        budget_j=100.0,
+    )
+    assert metrics.mean_success_energy_j is None
+    assert metrics.mean_success_relative_budget_excess is None
+    assert metrics.success_conditional_energy_violation_rate is None
+    assert metrics.joint_feasibility_rate == 0.0

@@ -5,6 +5,7 @@ from pace_sim2real.algorithms import (
     ConstrainedRolloutStorage,
     PacePPOLagrangian,
     normalized_lagrangian_actor_loss,
+    terminal_cost_boundary_loss,
 )
 from pace_sim2real.dual import module_sha256
 
@@ -56,6 +57,48 @@ def test_actor_loss_normalizes_only_policy_surrogates() -> None:
     torch.testing.assert_close(loss, torch.tensor(3.0))
 
 
+def test_terminal_cost_boundary_loss_zeros_time_without_mutating_input() -> None:
+    class TimeProbe(torch.nn.Module):
+        def forward(self, obs: TensorDict) -> torch.Tensor:
+            return obs.get("cost_time") + 2.0
+
+    observations = TensorDict(
+        {
+            "policy": torch.randn(3, 4),
+            "cost_time": torch.tensor([[1.0], [0.5], [0.001]]),
+        },
+        batch_size=[3],
+    )
+    original_time = observations.get("cost_time").clone()
+    loss, absolute_mean = terminal_cost_boundary_loss(TimeProbe(), observations)
+
+    torch.testing.assert_close(loss, torch.tensor(4.0))
+    torch.testing.assert_close(absolute_mean, torch.tensor(2.0))
+    torch.testing.assert_close(observations.get("cost_time"), original_time)
+
+
+def test_terminal_cost_boundary_loss_rejects_missing_or_malformed_time() -> None:
+    critic = torch.nn.Identity()
+    missing = TensorDict({"policy": torch.zeros(2, 3)}, batch_size=[2])
+    try:
+        terminal_cost_boundary_loss(critic, missing)
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("missing cost_time must be rejected")
+
+    malformed = TensorDict(
+        {"policy": torch.zeros(2, 3), "cost_time": torch.zeros(2, 2)},
+        batch_size=[2],
+    )
+    try:
+        terminal_cost_boundary_loss(critic, malformed)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("cost_time with more than one feature must be rejected")
+
+
 def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
     class DummyEnv:
         num_envs = 4
@@ -105,6 +148,11 @@ def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
             "num_mini_batches": 1,
             "schedule": "fixed",
             "desired_kl": 0.01,
+            "cost_terminal_boundary_coef": 1.0,
+            "cost_mc_replay_coef": 1.0,
+            "cost_mc_initial_coef": 1.0,
+            "cost_mc_batch_size": 4,
+            "cost_mc_replay_seed": 7,
         },
         "multi_gpu": None,
     }
@@ -112,6 +160,12 @@ def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
     assert algorithm.actor.mlp[0].in_features == 3
     assert algorithm.critic.mlp[0].in_features == 3
     assert algorithm.cost_critic.mlp[0].in_features == 4
+    algorithm.set_cost_mc_replay(
+        obs["policy"],
+        obs["cost_time"],
+        torch.linspace(1.0, 0.25, 4),
+        dataset_sha256="test-dataset-sha256",
+    )
     for step in range(2):
         algorithm.act(obs)
         dones = torch.zeros(4, dtype=torch.long)
@@ -121,16 +175,38 @@ def test_rsl_rl_5_algorithm_constructs_and_updates_on_cpu() -> None:
             obs,
             rewards=torch.ones(4),
             dones=dones,
-            extras={"pace_cost": torch.full((4,), 0.1)},
+            extras={
+                "pace_cost": torch.full((4,), 0.1),
+                "time_outs": dones.bool(),
+            },
         )
+    # The wrapper-provided done mask is terminal for cost, while timeout
+    # bootstrapping remains reward-only.
+    assert algorithm.constrained_storage.cost_dones[1, 0, 0] == 1
+    torch.testing.assert_close(
+        algorithm.constrained_storage.rewards[1, 0],
+        torch.ones_like(algorithm.constrained_storage.rewards[1, 0])
+        + algorithm.gamma * algorithm.constrained_storage.values[1, 0],
+    )
     algorithm.compute_returns(obs)
     losses = algorithm.update()
     assert "cost_value" in losses
     assert "cost_explained_variance" in losses
+    assert losses["cost_boundary"] > 0.0
+    assert losses["cost_boundary_abs"] > 0.0
+    assert losses["cost_terminal_boundary_coef"] == 1.0
+    assert losses["cost_mc"] > 0.0
+    assert losses["cost_mc_initial"] > 0.0
+    assert losses["cost_mc_replay_coef"] == 1.0
+    assert losses["cost_mc_initial_coef"] == 1.0
     assert algorithm.constrained_storage.step == 0
 
     algorithm.set_lagrangian_multiplier(2.5)
     saved = algorithm.save()
+    assert saved["cost_terminal_boundary_coef"] == 1.0
+    assert saved["cost_mc_replay_coef"] == 1.0
+    assert saved["cost_mc_initial_coef"] == 1.0
+    assert saved["cost_mc_dataset_sha256"] == "test-dataset-sha256"
     algorithm.set_lagrangian_multiplier(0.0)
     assert algorithm.load(saved, load_cfg=None, strict=True)
     assert algorithm.lagrangian_multiplier == 2.5

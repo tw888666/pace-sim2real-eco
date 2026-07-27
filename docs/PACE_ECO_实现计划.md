@@ -17,7 +17,7 @@
 2. 按 12 个 armature（等效转子惯量）、12 个 viscous friction（粘性摩擦）、12 个 static/dynamic friction（静/动摩擦）、12 个 encoder bias（编码器偏置）和 1 个 delay（延迟）冻结 ANYmal-D 仿真。
 3. 使用 400 Hz 物理仿真、50 Hz 策略；每个策略步累计全部 8 个物理子步能量。
 4. reward（奖励）只保留速度跟踪、碰撞和 FTD（足端触地速度）惩罚。
-5. cost（代价）使用 PACE 物理能量；摔倒回合只在训练代价中补到 1.25 屏障，屏障不计入模型焦耳或物理预算违反率。
+5. cost（代价）使用 PACE 物理能量；摔倒回合只在训练代价中补到 1.25 屏障，屏障不计入模型焦耳或回合能量违反比例。
 6. PPO-Lagrangian 同时训练 reward critic（奖励价值网络）和 cost critic（代价价值网络）；乘子由独立 256 回合 dual-eval（对偶评估）更新。
 
 功率按论文公式实现：

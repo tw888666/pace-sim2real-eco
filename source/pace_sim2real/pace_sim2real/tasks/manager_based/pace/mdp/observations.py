@@ -8,6 +8,7 @@ from isaaclab.assets import Articulation
 from isaaclab.managers import SceneEntityCfg
 
 from pace_sim2real.utils.identified_parameters import articulation_encoder_bias
+from pace_sim2real.utils.finite_horizon import normalized_time_to_go
 
 
 def encoder_joint_pos_rel(env, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot")):
@@ -27,5 +28,4 @@ def encoder_joint_pos_rel(env, asset_cfg: SceneEntityCfg = SceneEntityCfg("robot
 
 def normalized_remaining_time(env) -> torch.Tensor:
     """Return the finite-horizon time-to-go in ``[0, 1]`` for the cost critic."""
-    remaining = 1.0 - env.episode_length_buf.float() / float(env.max_episode_length)
-    return remaining.clamp_(0.0, 1.0).unsqueeze(-1)
+    return normalized_time_to_go(env.episode_length_buf, env.max_episode_length).unsqueeze(-1)

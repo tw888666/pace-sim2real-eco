@@ -8,7 +8,7 @@ import torch
 
 from isaaclab.envs import ManagerBasedRLEnv
 
-from pace_sim2real.energy import EnergyAccumulator, compute_power_components
+from pace_sim2real.energy import EnergyAccumulator, compute_normalized_pace_cost, compute_power_components
 from pace_sim2real.utils.identified_parameters import (
     ANYMAL_D_JOINT_ORDER,
     IdentifiedActuatorParameters,
@@ -68,17 +68,17 @@ class PaceEnergyRLEnv(ManagerBasedRLEnv):
 
         control = self.energy_accumulator.control_step_snapshot()
         episode = self.energy_accumulator.episode_snapshot()
-        physical_cost = control["total"] / budget
-        episode_physical_cost = episode["total"] / budget
-        barrier_addition = torch.where(
+        cost = compute_normalized_pace_cost(
+            control["total"],
+            episode["total"],
             self.reset_terminated,
-            torch.clamp(float(self.cfg.pace_energy.failure_barrier) - episode_physical_cost, min=0.0),
-            torch.zeros_like(physical_cost),
+            budget_j=budget,
+            failure_barrier=float(self.cfg.pace_energy.failure_barrier),
         )
 
-        self.extras["pace_cost"] = physical_cost + barrier_addition
-        self.extras["pace_physical_cost"] = physical_cost
-        self.extras["pace_barrier_cost"] = barrier_addition
+        self.extras["pace_cost"] = cost.total
+        self.extras["pace_physical_cost"] = cost.physical
+        self.extras["pace_barrier_cost"] = cost.barrier
         self.extras["pace_step_energy_j"] = control["total"]
         self.extras["pace_episode_energy_j"] = episode["total"]
         for name in ("electrical", "mechanical", "potential"):

@@ -7,6 +7,8 @@ as true terminal states.
 
 from __future__ import annotations
 
+import math
+
 import torch
 import torch.nn as nn
 from tensordict import TensorDict
@@ -47,6 +49,38 @@ def normalized_lagrangian_actor_loss(
     return (reward_surrogate_loss + multiplier * cost_surrogate_loss) / (1.0 + multiplier) - (
         entropy_coefficient * entropy.mean()
     )
+
+
+def terminal_cost_boundary_loss(
+    cost_critic: nn.Module,
+    observations: TensorDict,
+    *,
+    time_group: str = "cost_time",
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Penalize non-zero finite-horizon value predictions at zero time-to-go.
+
+    The undiscounted finite-horizon cost satisfies ``V_C(s, t=0) = 0`` for
+    every state because no control transition remains.  With ``gamma_C=1``,
+    ordinary bootstrapped TD/GAE targets weakly constrain an additive value
+    offset away from terminal samples.  This counterfactual boundary batch
+    provides that missing absolute anchor without changing actor observations.
+
+    Returns:
+        A pair containing mean squared boundary prediction and mean absolute
+        boundary prediction.  The input TensorDict is never modified.
+    """
+    if time_group not in observations.keys():
+        raise KeyError(f"cost boundary supervision requires observation group {time_group!r}")
+    remaining_time = observations.get(time_group)
+    if not isinstance(remaining_time, torch.Tensor):
+        raise TypeError(f"observation group {time_group!r} must be a tensor")
+    if remaining_time.ndim < 1 or remaining_time.shape[-1] != 1:
+        raise ValueError(f"observation group {time_group!r} must have final dimension 1")
+
+    boundary_observations = observations.clone()
+    boundary_observations.set(time_group, torch.zeros_like(remaining_time))
+    boundary_values = cost_critic(boundary_observations)
+    return boundary_values.square().mean(), boundary_values.abs().mean()
 
 
 class ConstrainedRolloutStorage(RolloutStorage):
@@ -142,6 +176,11 @@ class PacePPOLagrangian(PPO):
         cost_lam: float = 0.95,
         cost_value_loss_coef: float = 1.0,
         cost_critic_learning_rate: float = 1.0e-3,
+        cost_terminal_boundary_coef: float = 0.0,
+        cost_mc_replay_coef: float = 0.0,
+        cost_mc_initial_coef: float = 0.0,
+        cost_mc_batch_size: int = 4096,
+        cost_mc_replay_seed: int = 13_579,
         lagrangian_multiplier_init: float = 0.0,
         lagrangian_multiplier_max: float = 100.0,
         normalize_cost_advantage: bool = True,
@@ -159,6 +198,26 @@ class PacePPOLagrangian(PPO):
         self.cost_lam = cost_lam
         self.cost_value_loss_coef = cost_value_loss_coef
         self.cost_critic_learning_rate = cost_critic_learning_rate
+        if not math.isfinite(cost_terminal_boundary_coef) or cost_terminal_boundary_coef < 0.0:
+            raise ValueError("cost_terminal_boundary_coef must be finite and non-negative")
+        self.cost_terminal_boundary_coef = float(cost_terminal_boundary_coef)
+        if not math.isfinite(cost_mc_replay_coef) or cost_mc_replay_coef < 0.0:
+            raise ValueError("cost_mc_replay_coef must be finite and non-negative")
+        if not math.isfinite(cost_mc_initial_coef) or cost_mc_initial_coef < 0.0:
+            raise ValueError("cost_mc_initial_coef must be finite and non-negative")
+        if cost_mc_batch_size <= 0 or cost_mc_replay_seed < 0:
+            raise ValueError("cost_mc_batch_size must be positive and cost_mc_replay_seed non-negative")
+        self.cost_mc_replay_coef = float(cost_mc_replay_coef)
+        self.cost_mc_initial_coef = float(cost_mc_initial_coef)
+        self.cost_mc_batch_size = int(cost_mc_batch_size)
+        self.cost_mc_replay_seed = int(cost_mc_replay_seed)
+        self._cost_mc_policy_observation: torch.Tensor | None = None
+        self._cost_mc_remaining_time: torch.Tensor | None = None
+        self._cost_mc_target: torch.Tensor | None = None
+        self._cost_mc_initial_indices: torch.Tensor | None = None
+        self.cost_mc_dataset_sha256: str | None = None
+        self._cost_mc_generator = torch.Generator(device=self.device)
+        self._cost_mc_generator.manual_seed(self.cost_mc_replay_seed)
         self.lagrangian_multiplier_max = lagrangian_multiplier_max
         self.normalize_cost_advantage = bool(normalize_cost_advantage)
         self.critic_only = False
@@ -181,6 +240,87 @@ class PacePPOLagrangian(PPO):
                 parameter.requires_grad_(not self.critic_only)
         if self.critic_only:
             self.set_lagrangian_multiplier(0.0)
+
+    def set_cost_mc_replay(
+        self,
+        policy_observation: torch.Tensor,
+        remaining_time: torch.Tensor,
+        target: torch.Tensor,
+        *,
+        dataset_sha256: str,
+    ) -> None:
+        """Install fresh complete-episode Monte Carlo targets for critic-only calibration."""
+        if policy_observation.ndim != 2:
+            raise ValueError("MC policy_observation must have [sample, feature] shape")
+        if remaining_time.shape != (policy_observation.shape[0], 1):
+            raise ValueError("MC remaining_time must have [sample, 1] shape")
+        if target.shape not in ((policy_observation.shape[0],), (policy_observation.shape[0], 1)):
+            raise ValueError("MC target must have [sample] or [sample, 1] shape")
+        if not dataset_sha256:
+            raise ValueError("MC replay requires a dataset SHA-256")
+        tensors = (policy_observation, remaining_time, target)
+        if not all(torch.isfinite(value).all() for value in tensors):
+            raise ValueError("MC replay contains NaN or infinity")
+        if (remaining_time < 0.0).any() or (remaining_time > 1.0).any():
+            raise ValueError("MC remaining_time must lie in [0, 1]")
+
+        self._cost_mc_policy_observation = policy_observation.detach().to(self.device).clone()
+        self._cost_mc_remaining_time = remaining_time.detach().to(self.device).clone()
+        self._cost_mc_target = target.detach().reshape(-1, 1).to(self.device).clone()
+        self._cost_mc_initial_indices = torch.nonzero(
+            torch.isclose(
+                self._cost_mc_remaining_time.squeeze(-1),
+                torch.ones((), device=self.device, dtype=self._cost_mc_remaining_time.dtype),
+            ),
+            as_tuple=False,
+        ).squeeze(-1)
+        if self.cost_mc_initial_coef > 0.0 and self._cost_mc_initial_indices.numel() == 0:
+            raise ValueError("positive cost_mc_initial_coef requires MC samples at remaining_time=1")
+        self.cost_mc_dataset_sha256 = dataset_sha256
+
+    def _sample_cost_mc_replay(self) -> tuple[TensorDict, torch.Tensor]:
+        if (
+            self._cost_mc_policy_observation is None
+            or self._cost_mc_remaining_time is None
+            or self._cost_mc_target is None
+        ):
+            raise RuntimeError("cost_mc_replay_coef is positive but no fresh MC dataset was installed")
+        num_samples = self._cost_mc_target.shape[0]
+        indices = torch.randint(
+            num_samples,
+            (min(self.cost_mc_batch_size, num_samples),),
+            device=self.device,
+            generator=self._cost_mc_generator,
+        )
+        observations = TensorDict(
+            {
+                "policy": self._cost_mc_policy_observation[indices],
+                "cost_time": self._cost_mc_remaining_time[indices],
+            },
+            batch_size=[indices.numel()],
+            device=self.device,
+        )
+        return observations, self._cost_mc_target[indices]
+
+    def _cost_mc_initial_batch(self) -> tuple[TensorDict, torch.Tensor]:
+        if (
+            self._cost_mc_policy_observation is None
+            or self._cost_mc_remaining_time is None
+            or self._cost_mc_target is None
+            or self._cost_mc_initial_indices is None
+            or self._cost_mc_initial_indices.numel() == 0
+        ):
+            raise RuntimeError("cost_mc_initial_coef is positive but no MC initial-state samples are installed")
+        indices = self._cost_mc_initial_indices
+        observations = TensorDict(
+            {
+                "policy": self._cost_mc_policy_observation[indices],
+                "cost_time": self._cost_mc_remaining_time[indices],
+            },
+            batch_size=[indices.numel()],
+            device=self.device,
+        )
+        return observations, self._cost_mc_target[indices]
 
     def act(self, obs: TensorDict) -> torch.Tensor:
         actions = super().act(obs)
@@ -234,7 +374,17 @@ class PacePPOLagrangian(PPO):
         cost_explained_variance = 1.0 - torch.var(storage.cost_returns - storage.cost_values) / (
             target_variance + 1.0e-8
         )
-        totals = {"value": 0.0, "cost_value": 0.0, "surrogate": 0.0, "cost_surrogate": 0.0, "entropy": 0.0}
+        totals = {
+            "value": 0.0,
+            "cost_value": 0.0,
+            "cost_boundary": 0.0,
+            "cost_boundary_abs": 0.0,
+            "cost_mc": 0.0,
+            "cost_mc_initial": 0.0,
+            "surrogate": 0.0,
+            "cost_surrogate": 0.0,
+            "entropy": 0.0,
+        }
 
         for batch in storage.mini_batch_generator(self.num_mini_batches, self.num_learning_epochs):
             if self.normalize_advantage_per_mini_batch:
@@ -315,12 +465,43 @@ class PacePPOLagrangian(PPO):
                 ).mean()
             else:
                 cost_value_loss = (batch.cost_returns - cost_values).square().mean()
+            if self.cost_terminal_boundary_coef > 0.0:
+                cost_boundary_loss, cost_boundary_abs = terminal_cost_boundary_loss(
+                    self.cost_critic,
+                    batch.observations,
+                )
+            else:
+                cost_boundary_loss = torch.zeros((), device=cost_value_loss.device, dtype=cost_value_loss.dtype)
+                cost_boundary_abs = torch.zeros((), device=cost_value_loss.device, dtype=cost_value_loss.dtype)
+            if self.cost_mc_replay_coef > 0.0:
+                mc_observations, mc_target = self._sample_cost_mc_replay()
+                cost_mc_loss = (self.cost_critic(mc_observations) - mc_target).square().mean()
+            else:
+                cost_mc_loss = torch.zeros((), device=cost_value_loss.device, dtype=cost_value_loss.dtype)
+            if self.cost_mc_initial_coef > 0.0:
+                mc_initial_observations, mc_initial_target = self._cost_mc_initial_batch()
+                cost_mc_initial_loss = (
+                    self.cost_critic(mc_initial_observations) - mc_initial_target
+                ).square().mean()
+            else:
+                cost_mc_initial_loss = torch.zeros(
+                    (), device=cost_value_loss.device, dtype=cost_value_loss.dtype
+                )
             self.cost_optimizer.zero_grad()
-            (self.cost_value_loss_coef * cost_value_loss).backward()
+            (
+                self.cost_value_loss_coef * cost_value_loss
+                + self.cost_terminal_boundary_coef * cost_boundary_loss
+                + self.cost_mc_replay_coef * cost_mc_loss
+                + self.cost_mc_initial_coef * cost_mc_initial_loss
+            ).backward()
             nn.utils.clip_grad_norm_(self.cost_critic.parameters(), self.max_grad_norm)
             self.cost_optimizer.step()
 
             totals["cost_value"] += cost_value_loss.item()
+            totals["cost_boundary"] += cost_boundary_loss.item()
+            totals["cost_boundary_abs"] += cost_boundary_abs.item()
+            totals["cost_mc"] += cost_mc_loss.item()
+            totals["cost_mc_initial"] += cost_mc_initial_loss.item()
 
         update_count = self.num_learning_epochs * self.num_mini_batches
         for name in totals:
@@ -329,6 +510,9 @@ class PacePPOLagrangian(PPO):
         totals["lagrangian_multiplier"] = self.lagrangian_multiplier
         totals["critic_only"] = float(self.critic_only)
         totals["normalize_cost_advantage"] = float(self.normalize_cost_advantage)
+        totals["cost_terminal_boundary_coef"] = self.cost_terminal_boundary_coef
+        totals["cost_mc_replay_coef"] = self.cost_mc_replay_coef
+        totals["cost_mc_initial_coef"] = self.cost_mc_initial_coef
         storage.clear()
         return totals
 
@@ -346,6 +530,10 @@ class PacePPOLagrangian(PPO):
             {
                 "cost_critic_state_dict": self.cost_critic.state_dict(),
                 "cost_optimizer_state_dict": self.cost_optimizer.state_dict(),
+                "cost_terminal_boundary_coef": self.cost_terminal_boundary_coef,
+                "cost_mc_replay_coef": self.cost_mc_replay_coef,
+                "cost_mc_initial_coef": self.cost_mc_initial_coef,
+                "cost_mc_dataset_sha256": self.cost_mc_dataset_sha256,
                 "lagrangian_multiplier": self.lagrangian_multiplier,
             }
         )

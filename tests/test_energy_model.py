@@ -1,6 +1,6 @@
 import torch
 
-from pace_sim2real.energy import EnergyAccumulator, compute_power_components
+from pace_sim2real.energy import EnergyAccumulator, compute_normalized_pace_cost, compute_power_components
 
 
 def test_pace_power_equations_and_regeneration() -> None:
@@ -50,3 +50,47 @@ def test_accumulator_integrates_every_physics_substep() -> None:
 
     accumulator.reset(torch.tensor([0]))
     torch.testing.assert_close(accumulator.episode["total"], torch.zeros(1))
+
+
+def test_normalized_cost_uses_one_budget_and_only_penalizes_failure() -> None:
+    cost = compute_normalized_pace_cost(
+        control_step_energy=torch.tensor([10.0, 5.0, 2.0]),
+        episode_energy=torch.tensor([80.0, 120.0, 80.0]),
+        terminated=torch.tensor([True, True, False]),
+        budget_j=100.0,
+        failure_barrier=1.25,
+    )
+
+    torch.testing.assert_close(cost.physical, torch.tensor([0.10, 0.05, 0.02]))
+    torch.testing.assert_close(cost.barrier, torch.tensor([0.45, 0.05, 0.0]))
+    torch.testing.assert_close(cost.total, torch.tensor([0.55, 0.10, 0.02]))
+
+
+def test_normalized_cost_rejects_invalid_budget_or_shapes() -> None:
+    values = torch.ones(2)
+    for budget in (0.0, -1.0, float("nan")):
+        try:
+            compute_normalized_pace_cost(
+                values,
+                values,
+                torch.zeros(2, dtype=torch.bool),
+                budget_j=budget,
+                failure_barrier=1.25,
+            )
+        except ValueError:
+            pass
+        else:
+            raise AssertionError(f"invalid budget {budget} must be rejected")
+
+    try:
+        compute_normalized_pace_cost(
+            values,
+            torch.ones(3),
+            torch.zeros(2, dtype=torch.bool),
+            budget_j=100.0,
+            failure_barrier=1.25,
+        )
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("mismatched cost tensor shapes must be rejected")

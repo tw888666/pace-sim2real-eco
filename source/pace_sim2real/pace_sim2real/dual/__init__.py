@@ -10,10 +10,13 @@ from .protocol import (
     load_dual_state,
 )
 from .metrics import (
+    EnergyFeasibilityMetrics,
     RegressionMetrics,
+    energy_feasibility_metrics,
     evaluate_trajectory_predictions,
     regression_metrics,
     undiscounted_return_to_go,
+    validate_energy_feasibility_metrics,
     validate_trajectory_metrics,
 )
 from .dataset import (
@@ -40,10 +43,13 @@ __all__ = [
     "file_sha256",
     "freeze_checkpoint",
     "load_dual_state",
+    "EnergyFeasibilityMetrics",
     "RegressionMetrics",
+    "energy_feasibility_metrics",
     "evaluate_trajectory_predictions",
     "regression_metrics",
     "undiscounted_return_to_go",
+    "validate_energy_feasibility_metrics",
     "validate_trajectory_metrics",
     "CRITIC_DATASET_SCHEMA_VERSION",
     "atomic_torch_save",

@@ -58,6 +58,12 @@ parser.add_argument(
     help="Load a paired real-time offline critic artifact before critic-only preheating.",
 )
 parser.add_argument(
+    "--cost_mc_dataset",
+    type=str,
+    default=None,
+    help="Load a fresh frozen-policy complete-episode dataset for critic-only MC auxiliary training.",
+)
+parser.add_argument(
     "--distributed", action="store_true", default=False, help="Run training with multiple GPUs or nodes."
 )
 parser.add_argument("--export_io_descriptors", action="store_true", default=False, help="Export IO descriptors.")
@@ -103,6 +109,7 @@ if version.parse(installed_version) != version.parse(RSL_RL_VERSION):
 """Rest everything follows."""
 
 import logging
+import math
 import os
 import time
 from datetime import datetime
@@ -128,7 +135,13 @@ from isaaclab_tasks.utils import get_checkpoint_path
 from isaaclab_tasks.utils.hydra import hydra_task_config
 
 import pace_sim2real.tasks  # noqa: F401
-from pace_sim2real.dual import file_sha256, load_dual_state, module_sha256
+from pace_sim2real.dual import (
+    file_sha256,
+    load_critic_dataset,
+    load_dual_state,
+    module_sha256,
+    undiscounted_return_to_go,
+)
 
 # import logger
 logger = logging.getLogger(__name__)
@@ -161,6 +174,16 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
             raise ValueError(
                 "--cost_critic_warmstart requires --critic_only and --reset_cost_critic_on_resume"
             )
+    if args_cli.cost_mc_dataset is not None and (not args_cli.critic_only or not agent_cfg.resume):
+        raise ValueError("--cost_mc_dataset currently requires --critic_only and --resume")
+    mc_auxiliary_enabled = (
+        getattr(agent_cfg.algorithm, "cost_mc_replay_coef", 0.0) > 0.0
+        or getattr(agent_cfg.algorithm, "cost_mc_initial_coef", 0.0) > 0.0
+    )
+    if args_cli.cost_mc_dataset is not None and not mc_auxiliary_enabled:
+        raise ValueError("--cost_mc_dataset requires a positive MC auxiliary coefficient")
+    if args_cli.cost_mc_dataset is None and mc_auxiliary_enabled:
+        raise ValueError("positive MC auxiliary coefficients require --cost_mc_dataset")
 
     # normalize legacy actor/critic fields to the RSL-RL 5.x schema
     agent_cfg = handle_deprecated_rsl_rl_cfg(agent_cfg, installed_version)
@@ -262,6 +285,23 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # load the checkpoint
     if agent_cfg.resume or agent_cfg.algorithm.class_name == "Distillation":
         print(f"[INFO]: Loading model checkpoint from: {resume_path}")
+        checkpoint_metadata = torch.load(resume_path, map_location="cpu", weights_only=False)
+        saved_boundary_coef = checkpoint_metadata.get("cost_terminal_boundary_coef")
+        active_boundary_coef = getattr(runner.alg, "cost_terminal_boundary_coef", None)
+        if (
+            saved_boundary_coef is not None
+            and active_boundary_coef is not None
+            and not math.isclose(
+                float(saved_boundary_coef),
+                float(active_boundary_coef),
+                rel_tol=0.0,
+                abs_tol=1.0e-12,
+            )
+        ):
+            raise ValueError(
+                "checkpoint cost_terminal_boundary_coef differs from the active training configuration; "
+                "resume with the original explicit agent.algorithm.cost_terminal_boundary_coef override"
+            )
         # load previously trained model
         load_cfg = None
         if args_cli.reset_cost_critic_on_resume:
@@ -290,6 +330,26 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
         if module_sha256(runner.alg.cost_critic) != warmstart["training"]["final_state_sha256"]:
             raise RuntimeError("loaded cost critic warmstart hash does not match its training manifest")
         print(f"[INFO]: Loaded paired real-time cost critic warmstart: {warmstart_path}")
+    if args_cli.cost_mc_dataset is not None:
+        mc_dataset_path = os.path.abspath(args_cli.cost_mc_dataset)
+        mc_dataset = load_critic_dataset(mc_dataset_path)
+        if mc_dataset["checkpoint_sha256"] != file_sha256(resume_path):
+            raise ValueError("MC dataset was collected from a different frozen checkpoint")
+        active_budget = float(env_cfg.pace_energy.episode_budget_j)
+        if not math.isclose(float(mc_dataset["budget_j"]), active_budget, rel_tol=0.0, abs_tol=1.0e-6):
+            raise ValueError("MC dataset budget differs from the active environment budget")
+        mc_target = undiscounted_return_to_go(mc_dataset["cost"], mc_dataset["valid"])
+        mc_valid = mc_dataset["valid"]
+        runner.alg.set_cost_mc_replay(
+            mc_dataset["policy_observation"][mc_valid],
+            mc_dataset["remaining_time"][mc_valid].unsqueeze(-1),
+            mc_target[mc_valid],
+            dataset_sha256=file_sha256(mc_dataset_path),
+        )
+        print(
+            f"[INFO]: Loaded fresh MC critic replay: {mc_dataset_path} "
+            f"({int(mc_valid.sum().item())} transitions)"
+        )
     if dual_state is not None:
         if not hasattr(runner.alg, "set_lagrangian_multiplier"):
             raise TypeError("the selected algorithm cannot consume a PPO-Lagrangian dual state")

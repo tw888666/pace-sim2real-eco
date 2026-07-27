@@ -50,6 +50,18 @@ class PacePPOLagrangianAlgorithmCfg(RslRlPpoAlgorithmCfg):
     cost_lam: float = 0.95
     cost_value_loss_coef: float = 1.0
     cost_critic_learning_rate: float = 1.0e-3
+    # Optional finite-horizon anchor V_C(s, t_remaining=0)=0. Keep disabled in
+    # the baseline and enable explicitly in the paired P0 boundary experiment.
+    cost_terminal_boundary_coef: float = 0.0
+    # Optional fresh-policy complete-episode Monte Carlo auxiliary loss. It is
+    # disabled by default and currently admitted only for critic-only P0 runs.
+    cost_mc_replay_coef: float = 0.0
+    # Exact reset states are only 1 / episode_length of a uniformly sampled
+    # complete trajectory.  This optional term anchors those states to their
+    # full-episode MC return without changing actor/reward-critic training.
+    cost_mc_initial_coef: float = 0.0
+    cost_mc_batch_size: int = 4096
+    cost_mc_replay_seed: int = 13_579
     lagrangian_multiplier_init: float = 0.0
     lagrangian_multiplier_max: float = 100.0
     # ECO normalizes cost advantages over the complete rollout. Keep this
@@ -82,6 +94,42 @@ class AnymalDPaceEcoPPORunnerCfg(RslRlOnPolicyRunnerCfg):
         obs_normalization=False,
     )
     algorithm = PacePPOLagrangianAlgorithmCfg(
+        value_loss_coef=1.0,
+        use_clipped_value_loss=True,
+        clip_param=0.2,
+        entropy_coef=0.005,
+        num_learning_epochs=5,
+        num_mini_batches=4,
+        learning_rate=1.0e-3,
+        schedule="adaptive",
+        gamma=0.99,
+        lam=0.95,
+        desired_kl=0.01,
+        max_grad_norm=1.0,
+    )
+
+
+@configclass
+class AnymalDPaceEcoUnconstrainedPPORunnerCfg(RslRlOnPolicyRunnerCfg):
+    """Clean standard-PPO reference with no energy term in the actor loss."""
+
+    num_steps_per_env = 64
+    max_iterations = 3000
+    save_interval = 100
+    experiment_name = "pace_eco_anymal_d_flat_unconstrained"
+    obs_groups = {"actor": ["policy"], "critic": ["policy"]}
+    actor = RslRlMLPModelCfg(
+        hidden_dims=[256, 256, 128],
+        activation="elu",
+        obs_normalization=False,
+        distribution_cfg=RslRlMLPModelCfg.GaussianDistributionCfg(init_std=1.0),
+    )
+    critic = RslRlMLPModelCfg(
+        hidden_dims=[256, 256, 128],
+        activation="elu",
+        obs_normalization=False,
+    )
+    algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=1.0,
         use_clipped_value_loss=True,
         clip_param=0.2,

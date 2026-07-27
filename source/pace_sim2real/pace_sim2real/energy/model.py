@@ -7,6 +7,7 @@ unit-tested on CPU.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import torch
@@ -23,6 +24,53 @@ class PowerComponents:
     @property
     def total(self) -> torch.Tensor:
         return self.electrical + self.mechanical + self.potential
+
+
+@dataclass(frozen=True)
+class NormalizedCostComponents:
+    """Per-control-step normalized physical and failure-barrier costs."""
+
+    physical: torch.Tensor
+    barrier: torch.Tensor
+
+    @property
+    def total(self) -> torch.Tensor:
+        return self.physical + self.barrier
+
+
+def compute_normalized_pace_cost(
+    control_step_energy: torch.Tensor,
+    episode_energy: torch.Tensor,
+    terminated: torch.Tensor,
+    *,
+    budget_j: float,
+    failure_barrier: float,
+) -> NormalizedCostComponents:
+    """Normalize PACE energy and add the early-failure terminal barrier.
+
+    Both the current control-step energy and accumulated episode energy use
+    exactly the same joule budget denominator.  Timeouts must be supplied as
+    ``terminated=False`` so a successful horizon end receives no barrier.
+    """
+    if control_step_energy.shape != episode_energy.shape or terminated.shape != control_step_energy.shape:
+        raise ValueError("control energy, episode energy, and terminated must share one shape")
+    if not isinstance(budget_j, (float, int)) or not math.isfinite(float(budget_j)):
+        raise ValueError("budget_j must be finite")
+    if budget_j <= 0.0:
+        raise ValueError("budget_j must be positive")
+    if not isinstance(failure_barrier, (float, int)) or not math.isfinite(float(failure_barrier)):
+        raise ValueError("failure_barrier must be finite")
+    if failure_barrier < 0.0:
+        raise ValueError("failure_barrier must be non-negative")
+
+    physical = control_step_energy / float(budget_j)
+    episode_physical = episode_energy / float(budget_j)
+    barrier = torch.where(
+        terminated.bool(),
+        torch.clamp(float(failure_barrier) - episode_physical, min=0.0),
+        torch.zeros_like(physical),
+    )
+    return NormalizedCostComponents(physical=physical, barrier=barrier)
 
 
 def compute_power_components(

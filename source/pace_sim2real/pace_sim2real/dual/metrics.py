@@ -27,6 +27,75 @@ class RegressionMetrics:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class EnergyFeasibilityMetrics:
+    """Episode-level physical-energy diagnostics for one frozen policy.
+
+    Relative excesses are signed: a negative value means the mean lies below
+    the budget. Violation rates are episode proportions, not ratios of mean
+    energy to the budget.
+    """
+
+    num_episodes: int
+    num_successful_episodes: int
+    mean_relative_budget_excess: float
+    mean_success_energy_j: float | None
+    mean_success_relative_budget_excess: float | None
+    episode_energy_violation_rate: float
+    success_conditional_energy_violation_rate: float | None
+    joint_feasibility_rate: float
+    mean_positive_energy_excess_j: float
+
+    def to_dict(self) -> dict[str, float | int | None]:
+        return asdict(self)
+
+
+def energy_feasibility_metrics(
+    physical_energy_j: torch.Tensor,
+    success: torch.Tensor,
+    budget_j: float,
+) -> EnergyFeasibilityMetrics:
+    """Summarize expected excess, episode violations, and joint feasibility."""
+    energy = physical_energy_j.detach().float().reshape(-1)
+    success = success.detach().reshape(-1)
+    if energy.shape != success.shape:
+        raise ValueError("physical_energy_j and success must contain one value per episode")
+    if energy.numel() == 0:
+        raise ValueError("energy feasibility metrics require at least one episode")
+    if success.dtype != torch.bool:
+        raise TypeError("success must be a boolean tensor")
+    if not math.isfinite(budget_j) or budget_j <= 0.0:
+        raise ValueError("budget_j must be finite and positive")
+    if not torch.isfinite(energy).all() or (energy < 0.0).any():
+        raise ValueError("physical energy must be finite and non-negative")
+
+    over_budget = energy > budget_j
+    jointly_feasible = success & ~over_budget
+    successful_energy = energy[success]
+    if successful_energy.numel() > 0:
+        mean_success_energy_j = float(successful_energy.mean().item())
+        mean_success_relative_budget_excess = mean_success_energy_j / budget_j - 1.0
+        success_conditional_violation = float(over_budget[success].float().mean().item())
+    else:
+        mean_success_energy_j = None
+        mean_success_relative_budget_excess = None
+        success_conditional_violation = None
+
+    metrics = EnergyFeasibilityMetrics(
+        num_episodes=energy.numel(),
+        num_successful_episodes=int(success.sum().item()),
+        mean_relative_budget_excess=float(energy.mean().item() / budget_j - 1.0),
+        mean_success_energy_j=mean_success_energy_j,
+        mean_success_relative_budget_excess=mean_success_relative_budget_excess,
+        episode_energy_violation_rate=float(over_budget.float().mean().item()),
+        success_conditional_energy_violation_rate=success_conditional_violation,
+        joint_feasibility_rate=float(jointly_feasible.float().mean().item()),
+        mean_positive_energy_excess_j=float(torch.clamp_min(energy - budget_j, 0.0).mean().item()),
+    )
+    validate_energy_feasibility_metrics(metrics.to_dict(), budget_j=budget_j)
+    return metrics
+
+
 def regression_metrics(prediction: torch.Tensor, target: torch.Tensor) -> RegressionMetrics:
     """Compute finite regression metrics using ``prediction - target`` residuals."""
     prediction = prediction.detach().float().reshape(-1)
@@ -172,6 +241,87 @@ def _validate_finite_metrics(value) -> None:
             _validate_finite_metrics(nested)
     elif isinstance(value, float) and not math.isfinite(value):
         raise ValueError("trajectory metrics contain NaN or infinity")
+
+
+def validate_energy_feasibility_metrics(
+    payload: dict,
+    *,
+    budget_j: float | None = None,
+    num_episodes: int | None = None,
+    success_rate: float | None = None,
+    mean_physical_energy_j: float | None = None,
+) -> None:
+    """Validate a serialized episode-level energy feasibility payload."""
+    required = {field.name for field in EnergyFeasibilityMetrics.__dataclass_fields__.values()}
+    if set(payload) != required:
+        raise ValueError(f"invalid energy feasibility metric fields: {sorted(payload)}")
+
+    count = payload["num_episodes"]
+    success_count = payload["num_successful_episodes"]
+    if not isinstance(count, int) or count <= 0:
+        raise ValueError("energy feasibility episode count must be positive")
+    if not isinstance(success_count, int) or not 0 <= success_count <= count:
+        raise ValueError("successful episode count is invalid")
+    if num_episodes is not None and count != num_episodes:
+        raise ValueError("energy feasibility episode count differs from the dual result")
+
+    required_numeric = (
+        "mean_relative_budget_excess",
+        "episode_energy_violation_rate",
+        "joint_feasibility_rate",
+        "mean_positive_energy_excess_j",
+    )
+    if not all(isinstance(payload[name], (int, float)) and math.isfinite(payload[name]) for name in required_numeric):
+        raise ValueError("energy feasibility metrics contain NaN, infinity, or a non-numeric value")
+    for name in ("episode_energy_violation_rate", "joint_feasibility_rate"):
+        if not 0.0 <= payload[name] <= 1.0:
+            raise ValueError(f"{name} must lie in [0, 1]")
+    if payload["mean_positive_energy_excess_j"] < 0.0:
+        raise ValueError("mean positive energy excess cannot be negative")
+
+    optional_success_fields = (
+        "mean_success_energy_j",
+        "mean_success_relative_budget_excess",
+        "success_conditional_energy_violation_rate",
+    )
+    if success_count == 0:
+        if any(payload[name] is not None for name in optional_success_fields):
+            raise ValueError("success-conditional metrics must be null when there are no successful episodes")
+    else:
+        if not all(
+            isinstance(payload[name], (int, float)) and math.isfinite(payload[name])
+            for name in optional_success_fields
+        ):
+            raise ValueError("success-conditional metrics must be finite when successful episodes exist")
+        if payload["mean_success_energy_j"] < 0.0:
+            raise ValueError("mean successful energy cannot be negative")
+        if not 0.0 <= payload["success_conditional_energy_violation_rate"] <= 1.0:
+            raise ValueError("success-conditional violation rate must lie in [0, 1]")
+
+    tolerance = 1.0e-6
+    if success_rate is not None and not math.isclose(success_count / count, success_rate, abs_tol=tolerance):
+        raise ValueError("successful episode count differs from success_rate")
+    if budget_j is not None:
+        if not math.isfinite(budget_j) or budget_j <= 0.0:
+            raise ValueError("budget_j must be finite and positive")
+        if success_count > 0:
+            expected_success_excess = payload["mean_success_energy_j"] / budget_j - 1.0
+            if not math.isclose(
+                payload["mean_success_relative_budget_excess"],
+                expected_success_excess,
+                rel_tol=1.0e-6,
+                abs_tol=1.0e-6,
+            ):
+                raise ValueError("mean successful relative excess is inconsistent with energy and budget")
+        if mean_physical_energy_j is not None:
+            expected_mean_excess = mean_physical_energy_j / budget_j - 1.0
+            if not math.isclose(
+                payload["mean_relative_budget_excess"],
+                expected_mean_excess,
+                rel_tol=1.0e-6,
+                abs_tol=1.0e-6,
+            ):
+                raise ValueError("mean relative excess is inconsistent with the dual result")
 
 
 def validate_trajectory_metrics(payload: dict) -> None:

@@ -12,7 +12,7 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .metrics import validate_trajectory_metrics
+from .metrics import validate_energy_feasibility_metrics, validate_trajectory_metrics
 
 
 def file_sha256(path: str | Path) -> str:
@@ -82,6 +82,7 @@ class DualEvaluationResult:
     success_rate: float
     evaluation_seed: int | None = None
     cost_value_metrics: dict | None = None
+    energy_feasibility_metrics: dict | None = None
     # Legacy v1 fields. They remain readable so already archived evaluations
     # can still be inspected and applied idempotently.
     cost_value_initial_bias: float | None = None
@@ -97,7 +98,7 @@ class DualEvaluationResult:
         return cls(**payload)
 
     def validate(self, *, require_checkpoint: bool = True) -> None:
-        if self.schema_version not in (1, 2):
+        if self.schema_version not in (1, 2, 3):
             raise ValueError(f"unsupported dual result schema {self.schema_version}")
         if self.cycle_id < 0 or self.budget_j <= 0.0 or self.num_episodes <= 0:
             raise ValueError("cycle id, budget, or episode count is invalid")
@@ -115,10 +116,20 @@ class DualEvaluationResult:
             numeric_fields.extend((self.cost_value_initial_bias, self.cost_explained_variance))
         else:
             if self.evaluation_seed is None or self.evaluation_seed < 0:
-                raise ValueError("v2 dual result requires a non-negative evaluation seed")
+                raise ValueError("v2/v3 dual result requires a non-negative evaluation seed")
             if self.cost_value_metrics is None:
-                raise ValueError("v2 dual result requires complete trajectory cost-value metrics")
+                raise ValueError("v2/v3 dual result requires complete trajectory cost-value metrics")
             validate_trajectory_metrics(self.cost_value_metrics)
+            if self.schema_version == 3:
+                if self.energy_feasibility_metrics is None:
+                    raise ValueError("v3 dual result requires episode-level energy feasibility metrics")
+                validate_energy_feasibility_metrics(
+                    self.energy_feasibility_metrics,
+                    budget_j=self.budget_j,
+                    num_episodes=self.num_episodes,
+                    success_rate=self.success_rate,
+                    mean_physical_energy_j=self.mean_physical_energy_j,
+                )
         if not all(math.isfinite(value) for value in numeric_fields):
             raise ValueError("dual result contains NaN or infinity")
         if require_checkpoint:

@@ -38,9 +38,11 @@ import pace_sim2real.tasks  # noqa: F401
 from pace_sim2real.dual import (
     DualEvaluationResult,
     atomic_write_json,
+    energy_feasibility_metrics,
     evaluate_trajectory_predictions,
     file_sha256,
 )
+from pace_sim2real.utils.finite_horizon import normalized_time_to_go
 
 
 def main() -> None:
@@ -84,8 +86,9 @@ def main() -> None:
         with torch.inference_mode():
             active_before_step = active.clone()
             cost_values = runner.alg.cost_critic(obs).squeeze(-1)
-            remaining_time = 1.0 - (
-                env.unwrapped.episode_length_buf.float() / float(env.unwrapped.max_episode_length)
+            remaining_time = normalized_time_to_go(
+                env.unwrapped.episode_length_buf,
+                env.unwrapped.max_episode_length,
             )
             actions = runner.alg.actor(obs, stochastic_output=True)
             obs, _, dones, extras = env.step(actions)
@@ -113,6 +116,11 @@ def main() -> None:
         torch.stack(trajectory_remaining_time, dim=1),
         success,
     )
+    feasibility_metrics = energy_feasibility_metrics(
+        final_energy,
+        success,
+        float(request["budget_j"]),
+    ).to_dict()
     result = DualEvaluationResult(
         cycle_id=int(request["cycle_id"]),
         checkpoint_path=str(checkpoint),
@@ -124,6 +132,8 @@ def main() -> None:
         success_rate=float(success.float().mean().item()),
         evaluation_seed=args.seed,
         cost_value_metrics=cost_value_metrics,
+        energy_feasibility_metrics=feasibility_metrics,
+        schema_version=3,
     )
     result.validate(require_checkpoint=False)
     if file_sha256(checkpoint) != request["checkpoint_sha256"]:

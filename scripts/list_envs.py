@@ -42,9 +42,9 @@ def main():
 
     # count of environments
     index = 0
-    # acquire all Isaac environments names
+    # acquire all PACE environment names
     for task_spec in gym.registry.values():
-        if "Template-" in task_spec.id:
+        if "Pace" in task_spec.id:
             # add details to table
             table.add_row([index + 1, task_spec.id, task_spec.entry_point, task_spec.kwargs["env_cfg_entry_point"]])
             # increment count
@@ -62,4 +62,3 @@ if __name__ == "__main__":
     finally:
         # close the app
         simulation_app.close()
-

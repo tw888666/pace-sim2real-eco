@@ -42,6 +42,7 @@ from pace_sim2real.dual import (
     file_sha256,
     validate_critic_dataset,
 )
+from pace_sim2real.utils.finite_horizon import normalized_time_to_go
 
 
 def main() -> None:
@@ -63,11 +64,10 @@ def main() -> None:
     raw_env = gym.make(args.task, cfg=env_cfg)
     env = RslRlVecEnvWrapper(raw_env, clip_actions=agent_cfg.clip_actions)
     runner = OnPolicyRunner(env, agent_cfg.to_dict(), log_dir=None, device=agent_cfg.device)
-    # model_3097 has the legacy 48-input cost critic. The actor and reward
-    # critic remain shape-compatible after adding a separate time observation.
-    runner.load(
-        str(checkpoint),
-        load_cfg={
+    if hasattr(runner.alg, "cost_critic"):
+        # model_3097 has the legacy 48-input cost critic. The actor and reward
+        # critic remain shape-compatible after adding a separate time observation.
+        load_cfg = {
             "actor": True,
             "critic": True,
             "optimizer": False,
@@ -76,8 +76,11 @@ def main() -> None:
             "cost_critic": False,
             "cost_optimizer": False,
             "lagrangian_multiplier": False,
-        },
-    )
+        }
+    else:
+        # A clean unconstrained PPO checkpoint has no cost critic or multiplier.
+        load_cfg = None
+    runner.load(str(checkpoint), load_cfg=load_cfg)
     runner.alg.eval_mode()
 
     obs = env.get_observations().to(args.device)
@@ -94,7 +97,10 @@ def main() -> None:
             active_before_step = active.clone()
             observations.append(obs["policy"].clone())
             remaining_times.append(
-                1.0 - env.unwrapped.episode_length_buf.float() / float(env.unwrapped.max_episode_length)
+                normalized_time_to_go(
+                    env.unwrapped.episode_length_buf,
+                    env.unwrapped.max_episode_length,
+                )
             )
             actions = runner.alg.actor(obs, stochastic_output=True)
             obs, _, dones, extras = env.step(actions)

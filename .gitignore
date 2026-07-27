@@ -70,4 +70,11 @@ _build
 .isaac-lab-docker-history
 
 # PACE specific
-# Experiment data, outputs, and logs are intentionally versioned for reproducibility.
+# Experiment data, outputs, and logs were originally versioned for reproducibility.
+# Files already committed stay tracked; these rules keep *new* run artifacts out of
+# git so the repository stays clonable. Add one explicitly with `git add -f` if a
+# specific artifact needs to be shared.
+/data/pace_eco/
+/logs/
+/outputs/
+*.pdf
