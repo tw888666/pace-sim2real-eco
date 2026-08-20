@@ -19,8 +19,9 @@ $$
 c_e=-16\times10^{-5}=-1.6\times10^{-4}.
 $$
 
-仓库现有 `gpt-计划.md`、`claude-思路.md`、平地环境配置和原多地形固定权重配置对该
-数值的记录一致；沿用标签 W100。
+归档中的 [gpt-计划.md](../archive/PACE-ECO-multi-terrain-legacy/gpt-计划.md)、
+[claude-思路.md](../archive/PACE-ECO-multi-terrain-legacy/claude-思路.md)、平地环境配置和
+原多地形固定权重配置对该数值的记录一致；沿用标签 W100。
 
 ## 2. v1.1 的解释边界
 

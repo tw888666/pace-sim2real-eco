@@ -1,7 +1,7 @@
 # PACE-ECO Terrain20sWide 下一阶段单行命令
 
 协议：`gpt-multi-terrain-v1.4`。工作树：
-`/home/xy.chen/tw/PACE-ECO-multi-terrain`。以下均为可直接复制的单行命令；GPU0–5均须在启动前检查占用，GPU5启用证据见`gpt-GPU5重启后恢复验证与启用记录.md`。
+`/home/xy.chen/tw/PACE-ECO-multi-terrain`。以下均为可直接复制的单行命令；GPU0–5均须在启动前检查占用，GPU5启用证据见[归档记录](../archive/PACE-ECO-multi-terrain-legacy/gpt-GPU5重启后恢复验证与启用记录.md)。
 当前只执行第1–3条非GPU关口，执行第4条以后必须先得到nullptr确认并重新检查GPU占用。
 
 ## 当前非 GPU 关口
