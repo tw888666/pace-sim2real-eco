@@ -58,6 +58,14 @@ from isaaclab_tasks.utils import load_cfg_from_registry
 
 import pace_eco_lab  # noqa: F401
 from pace_eco_lab.constants import ECO_ID, REGISTERED_TASKS
+from pace_eco_lab.direction_conditioned_protocol import (
+    DIRECTION_CONDITIONED_TASK_IDS,
+    FOOT_BOUNDARY_AUDIT_VERSION,
+    PPO_SEEDS as DIRECTION_PPO_SEEDS,
+    PROTOCOL_VERSION as DIRECTION_PROTOCOL_VERSION,
+    TASK_IDS as DIRECTION_TASK_IDS,
+    terrain_seed as direction_terrain_seed,
+)
 from pace_eco_lab.multi_terrain_protocol import (
     MULTI_TERRAIN_TASK_IDS,
     PACE_PAPER_FIXED_WEIGHT,
@@ -93,6 +101,9 @@ def _load_energy_budget(
     path_value: str,
     required_stage: str,
     required_terrain: str,
+    protocol_version: str = PROTOCOL_VERSION,
+    boundary_audit_version: str | None = None,
+    source_experiment: str | None = None,
 ) -> float:
     path = Path(path_value).expanduser().resolve()
     if not path.is_file():
@@ -100,10 +111,14 @@ def _load_energy_budget(
     data = json.loads(path.read_text(encoding="utf-8"))
     if (
         data.get("冻结状态") != "已冻结"
-        or data.get("协议版本") != PROTOCOL_VERSION
+        or data.get("协议版本") != protocol_version
         or data.get("阶段") != required_stage
     ):
         raise ValueError("B_ref 文件的冻结状态、协议版本或阶段不匹配。")
+    if boundary_audit_version is not None and data.get("边界审计版本") != boundary_audit_version:
+        raise ValueError("B_ref 文件的边界审计版本不匹配。")
+    if source_experiment is not None and data.get("来源实验") != source_experiment:
+        raise ValueError("B_ref 文件不是由冻结的 E2 任务型标定导出。")
     if required_stage == "stage2":
         reference = float(data.get("B_ref_mixed_J", 0.0))
         label = "B_ref_mixed_J"
@@ -187,6 +202,78 @@ def _configure_multi_terrain_protocol(env_cfg, agent_cfg) -> str:
     return method
 
 
+def _configure_direction_conditioned_protocol(env_cfg, agent_cfg) -> str:
+    inverse = {task_id: key for key, task_id in DIRECTION_TASK_IDS.items()}
+    variant, method, terrain = inverse[args_cli.task]
+    role_to_seed_group = {
+        "stage1_smoke_train": "stage1_smoke",
+        "stage1_capacity_smoke_train": "stage1_smoke",
+        "stage1_budget_train": "stage1_budget",
+        "stage1_formal_train": "stage1_formal",
+        "stage2_budget_train": "stage2_budget",
+        "stage2_formal_train": "stage2_formal",
+        "stage2_smoke_train": "stage2_smoke",
+        "stage2_capacity_smoke_train": "stage2_smoke",
+    }
+    if args_cli.protocol_role not in role_to_seed_group:
+        raise ValueError(f"方向条件训练缺少或使用了非法 --protocol_role：{args_cli.protocol_role}")
+    stage = args_cli.protocol_role.split("_", maxsplit=1)[0]
+    seed_group = role_to_seed_group[args_cli.protocol_role]
+    if args_cli.seed not in DIRECTION_PPO_SEEDS[seed_group]:
+        raise ValueError(f"PPO seed {args_cli.seed} 不属于 v2 角色 {args_cli.protocol_role}。")
+    smoke = args_cli.protocol_role.endswith("smoke_train")
+    capacity_smoke = args_cli.protocol_role.endswith("capacity_smoke_train")
+    expected_iterations = 2 if smoke else 3_000
+    expected_envs = 4_096 if capacity_smoke or not smoke else 16
+    if args_cli.max_iterations != expected_iterations or env_cfg.scene.num_envs != expected_envs:
+        raise ValueError(
+            f"v2 角色 {args_cli.protocol_role} 冻结为 {expected_envs} 环境/"
+            f"{expected_iterations} 次更新。"
+        )
+    if smoke != ("smoke" in args_cli.run_name.lower()):
+        raise ValueError("v2 smoke 角色与 run_name 标记不一致。")
+    if stage == "stage1" and terrain == "mixed":
+        raise ValueError("v2 阶段一禁止 mixed。")
+    if stage == "stage2" and terrain != "mixed":
+        raise ValueError("v2 阶段二只允许 mixed。")
+    if args_cli.protocol_role.endswith("budget_train") and (
+        variant != "directional" or method != "task_only"
+    ):
+        raise ValueError("v2 B_ref 只允许 E2 directional/task_only seed0 标定模型。")
+    expected_terrain_seed = direction_terrain_seed(
+        args_cli.protocol_role,
+        terrain,
+        args_cli.seed,
+    )
+    if args_cli.terrain_seed != expected_terrain_seed:
+        raise ValueError(
+            f"v2 地形 seed 不符合冻结映射：期望 {expected_terrain_seed}，"
+            f"实际 {args_cli.terrain_seed}。"
+        )
+    env_cfg.pace_terrain_seed = int(args_cli.terrain_seed)
+    env_cfg.scene.terrain.terrain_generator.seed = int(args_cli.terrain_seed)
+    if args_cli.fixed_energy_weight is not None or args_cli.fixed_selection_json is not None:
+        raise ValueError("方向条件 v2.1 不包含固定权重方法。")
+    if method == "eco":
+        if args_cli.energy_reference_json is None:
+            raise ValueError("方向条件 PACE-ECO 必须提供冻结的 v2 B_ref JSON。")
+        agent_cfg.algorithm.energy_budget_j = _load_energy_budget(
+            args_cli.energy_reference_json,
+            stage,
+            terrain,
+            protocol_version=DIRECTION_PROTOCOL_VERSION,
+            boundary_audit_version=FOOT_BOUNDARY_AUDIT_VERSION,
+            source_experiment="E2 directional/task_only seed0 calibration",
+        )
+    elif args_cli.energy_reference_json is not None:
+        raise ValueError("v2 --energy_reference_json 只允许 ECO 任务。")
+    if args_cli.energy_budget_j is not None:
+        raise ValueError("方向条件 v2 从冻结 B_ref 得到统一 B80，禁止命令行覆盖。")
+    if args_cli.log_root is None:
+        raise ValueError("方向条件 v2 任务必须提供独立 --log_root。")
+    return method
+
+
 def _validate_run_role(run_name: str, max_iterations: int, resume: bool) -> None:
     lowered = run_name.lower()
     if "smoke" in lowered:
@@ -225,8 +312,15 @@ def main() -> None:
     agent_cfg.device = device
     agent_cfg.max_iterations = args_cli.max_iterations
     agent_cfg.run_name = run_name
-    multi_terrain_task = args_cli.task in MULTI_TERRAIN_TASK_IDS
-    multi_method = _configure_multi_terrain_protocol(env_cfg, agent_cfg) if multi_terrain_task else None
+    v1_multi_terrain_task = args_cli.task in MULTI_TERRAIN_TASK_IDS
+    direction_conditioned_task = args_cli.task in DIRECTION_CONDITIONED_TASK_IDS
+    multi_terrain_task = v1_multi_terrain_task or direction_conditioned_task
+    if v1_multi_terrain_task:
+        multi_method = _configure_multi_terrain_protocol(env_cfg, agent_cfg)
+    elif direction_conditioned_task:
+        multi_method = _configure_direction_conditioned_protocol(env_cfg, agent_cfg)
+    else:
+        multi_method = None
     if not multi_terrain_task and any(
         value is not None
         for value in (

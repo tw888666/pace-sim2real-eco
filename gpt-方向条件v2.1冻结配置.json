@@ -1,0 +1,86 @@
+{
+  "冻结状态": "v2.1实现冻结，B_ref待E2任务型seed0标定",
+  "协议版本": "gpt-direction-conditioned-v2.1",
+  "边界审计版本": "gpt-四足真实地形边界-v4",
+  "研究定位": "Direction-Conditioned Energy-Efficient Locomotion on Complex Terrains",
+  "不声称": [
+    "完整导航",
+    "任意世界方向泛化",
+    "有限目标点到达",
+    "Motion Prior分层架构"
+  ],
+  "DirectionCommand": {
+    "世界目标方向": [1.0, 0.0],
+    "目标速度_m_s": 1.0,
+    "策略观测": [
+      "direction_b_x",
+      "direction_b_y",
+      "target_speed"
+    ],
+    "actor观测维数": 48,
+    "critic观测维数": 353,
+    "checkpoint规则": "v1与v2即使张量形状相同也禁止互相恢复训练"
+  },
+  "奖励": {
+    "E1": "方向观测+原v1 body-frame速度奖励",
+    "E2": "方向观测+世界水平方向速度奖励",
+    "方向速度权重": 0.2,
+    "方向速度sigma": 0.5,
+    "yaw_rate权重": 0.2,
+    "yaw_rate_sigma": 0.5,
+    "heading_reward": "v2.1不加，留待E3预注册消融"
+  },
+  "方向成功": {
+    "完整20秒": true,
+    "无非法终止": true,
+    "最低方向净进度_m": 16.0,
+    "最大横轨偏离_m": 3.0,
+    "位移参考": "每回合实际起点"
+  },
+  "B_ref": {
+    "来源变体": "E2 directional",
+    "来源方法": "task_only",
+    "PPO_seed": 0,
+    "资格门槛": "每个地形方向穿越成功率>=0.95",
+    "B80定义": "0.8*B_ref",
+    "共享方法": [
+      "E1-ECO",
+      "E2-ECO"
+    ]
+  },
+  "PPO_seeds": {
+    "stage1_smoke": [900],
+    "stage1_budget": [0],
+    "stage1_formal": [1, 2, 3, 4, 5],
+    "stage2_budget": [0],
+    "stage2_formal": [1, 2, 3, 4, 5],
+    "stage2_smoke": [901]
+  },
+  "地形seed基数": {
+    "stage1_smoke_train": 950000,
+    "stage1_budget_train": 510000,
+    "stage1_formal_train": 530000,
+    "stage1_calibration": 540000,
+    "stage1_holdout": 550000,
+    "stage2_budget_train": 610000,
+    "stage2_formal_train": 630000,
+    "stage2_calibration": 640000,
+    "stage2_holdout": 650000,
+    "stage2_smoke_train": 960000
+  },
+  "输出根": {
+    "训练": "logs/supplementary/direction_conditioned_v2_1",
+    "评估": "results/supplementary/direction_conditioned_v2_1"
+  },
+  "工作量": {
+    "stage1标定训练": 5,
+    "stage1正式训练": 100,
+    "stage1标定评估": 5,
+    "stage1正式评估": 100,
+    "stage2标定训练": 1,
+    "stage2正式训练": 20,
+    "stage2标定评估": 1,
+    "stage2正式评估": 20,
+    "每个评估的GPU进程数": 4
+  }
+}

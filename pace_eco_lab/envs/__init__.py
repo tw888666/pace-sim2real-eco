@@ -8,6 +8,7 @@ from __future__ import annotations
 import gymnasium as gym
 
 from pace_eco_lab.constants import ECO_ID, FIXED_WEIGHT_ID, TASK_ONLY_ID
+from pace_eco_lab.direction_conditioned_protocol import TASK_IDS as DIRECTION_TASK_IDS
 from pace_eco_lab.multi_terrain_protocol import TASK_IDS
 
 
@@ -31,7 +32,7 @@ def _register(
 
 
 def register_tasks() -> None:
-    """幂等注册三个原 Flat 任务和18个固定20秒宽场多地形任务。"""
+    """幂等注册 v1 任务和独立的方向条件 v2.1 任务。"""
 
     _register(
         TASK_ONLY_ID,
@@ -73,6 +74,26 @@ def register_tasks() -> None:
             (
                 "pace_eco_lab.configs.multi_terrain_agent_cfg:"
                 f"Pace{terrain_title}Terrain20s{method_title}PPORunnerCfg"
+            ),
+            "pace_eco_lab.envs.terrain20s_env:PaceTerrain20sRLEnv",
+        )
+    direction_variant_titles = {
+        "observation_control": "DirectionObservationControl",
+        "directional": "DirectionConditioned",
+    }
+    for (variant, method, terrain), task_id in DIRECTION_TASK_IDS.items():
+        variant_title = direction_variant_titles[variant]
+        terrain_title = terrain_titles[terrain]
+        method_title = method_titles[method]
+        _register(
+            task_id,
+            (
+                "pace_eco_lab.configs.direction_conditioned_env_cfg:"
+                f"Pace{variant_title}{terrain_title}Terrain20s{method_title}EnvCfg"
+            ),
+            (
+                "pace_eco_lab.configs.direction_conditioned_agent_cfg:"
+                f"Pace{variant_title}{terrain_title}Terrain20s{method_title}PPORunnerCfg"
             ),
             "pace_eco_lab.envs.terrain20s_env:PaceTerrain20sRLEnv",
         )

@@ -33,6 +33,40 @@ def pace_velocity_tracking(
     return reward / env.step_dt
 
 
+def pace_directional_velocity_tracking(
+    env: ManagerBasedRLEnv,
+    command_name: str,
+    sigma: float,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """跟踪固定世界方向的二维目标速度，并抵消 RewardManager 的 dt。"""
+
+    if sigma <= 0.0:
+        raise ValueError("方向速度奖励 sigma 必须为正。")
+    asset: Articulation = env.scene[asset_cfg.name]
+    command_term = env.command_manager.get_term(command_name)
+    if not hasattr(command_term, "direction_w") or not hasattr(command_term, "target_speed"):
+        raise TypeError(f"command {command_name} 不是 DirectionCommand。")
+    target_velocity_w = command_term.direction_w * command_term.target_speed
+    error = asset.data.root_lin_vel_w[:, :2] - target_velocity_w
+    return torch.exp(-torch.sum(error.square(), dim=-1) / sigma**2) / env.step_dt
+
+
+def pace_yaw_rate_tracking(
+    env: ManagerBasedRLEnv,
+    sigma: float,
+    target_yaw_rate: float = 0.0,
+    asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+) -> torch.Tensor:
+    """独立保留 PACE 的机身偏航角速度指数核。"""
+
+    if sigma <= 0.0:
+        raise ValueError("偏航角速度奖励 sigma 必须为正。")
+    asset: Articulation = env.scene[asset_cfg.name]
+    error = asset.data.root_ang_vel_b[:, 2] - float(target_yaw_rate)
+    return torch.exp(-error.square() / sigma**2) / env.step_dt
+
+
 def pace_collision_indicator(
     env: ManagerBasedRLEnv,
     asset_cfg: SceneEntityCfg,

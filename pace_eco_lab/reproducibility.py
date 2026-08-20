@@ -64,6 +64,9 @@ def implementation_source_hashes() -> dict[str, str]:
         "scripts/pace_eco/freeze_multi_terrain_budgets.py",
         "scripts/pace_eco/freeze_multi_terrain_holdout.py",
         "scripts/pace_eco/汇总多地形结果.py",
+        "scripts/pace_eco/direction_conditioned_eval.py",
+        "scripts/pace_eco/freeze_direction_conditioned_budgets.py",
+        "scripts/pace_eco/freeze_direction_conditioned_holdout.py",
     ):
         path = PROJECT_ROOT / relative
         if path.is_file():
