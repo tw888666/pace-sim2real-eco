@@ -6,6 +6,17 @@
 PACE is a framework for **sim-to-real transfer of diverse robotic systems**, combining data-driven system identification with evolutionary optimization.
 It enables accurate actuator modeling and robust adaptation between simulation to reality by explicitly learning physically meaningful dynamics parameters.
 
+## PACE-ECO 多地形对比实验
+
+本仓库的 PACE-ECO 多地形任务使用 ANYmal D，并在 PACE 标定后的机器人动力学上比较
+任务型 PPO、固定权重 PPO 和 PACE-ECO。任务、环境、训练和评估实现位于
+`pace_eco_lab/` 与 `scripts/pace_eco/`，任务 ID（任务标识）均以
+`Terrain20sWide-Anymal-D-v0` 结尾。
+
+多地形实验分支以本仓库的 PACE Sim2Real 源码历史为基线，不包含其他机器人项目的
+代码、资产或提交祖先。ANYmal D 的外部标定数据不重复纳入 Git（版本控制系统）；运行
+脚本时应通过 `PACE_ECO_DATA_ROOT=/绝对路径/pace_data` 明确指定数据目录。
+
 ---
 
 ## 🤖🐾 What is PACE?
@@ -260,4 +271,3 @@ The paper has been accepted for publication in **The International Journal of Ro
 ---
 
 **PACE** — bringing simulation and reality closer, one parameter at a time.
-

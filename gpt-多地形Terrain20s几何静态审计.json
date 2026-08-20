@@ -1,0 +1,3478 @@
+{
+  "协议版本": "gpt-multi-terrain-v1.3",
+  "审计状态": "全部通过",
+  "创建时间": "2026-08-06T20:05:09+08:00",
+  "是否启动Isaac_Sim": false,
+  "是否使用GPU": false,
+  "实例数": 63,
+  "跨块结论": "出生点相对位移前30m、后2m、侧向3m均未到地形块边界；评估越界即拒绝结果。",
+  "出生点结论": "origin 位于局部 x=5m、宽度中心；所有类别均保留平整出生平台。",
+  "有限斜坡楼梯结论": "斜坡和楼梯在长地形块内结束并接有限平台，不会无限延伸。",
+  "逐实例": [
+    {
+      "角色": "stage1_budget_train",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 110000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 110000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 110000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 110000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 110000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 110000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 111000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.0195
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.018904567459301375
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 111000,
+          "height_m": 0.0195,
+          "correlation_m": 0.5514509509239177
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 111000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.027970652252978123
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.03479158793892927
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 111000,
+          "height_m": 0.0375,
+          "correlation_m": 0.5582901667619593
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 111000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.049696326076680994
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.055499999999999994
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 111000,
+          "height_m": 0.0555,
+          "correlation_m": 0.5777705690666142
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.1,
+      "地形seed": 112000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.05
+        ],
+        "vertex_count": 256,
+        "face_count": 384,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.1,
+          "seed": 112000,
+          "step_height_m": 0.035,
+          "sampled_nominal_step_width_m": 0.8668478875754618,
+          "actual_step_width_m": 0.8666666666666667,
+          "step_count": 30,
+          "total_elevation_change_m": 1.05
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.5,
+      "地形seed": 112000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.375
+        ],
+        "vertex_count": 216,
+        "face_count": 324,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.5,
+          "seed": 112000,
+          "step_height_m": 0.055,
+          "sampled_nominal_step_width_m": 1.0514307148993487,
+          "actual_step_width_m": 1.04,
+          "step_count": 25,
+          "total_elevation_change_m": 1.375
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.9,
+      "地形seed": 112000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.1000000000000005
+        ],
+        "vertex_count": 240,
+        "face_count": 360,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.9,
+          "seed": 112000,
+          "step_height_m": 0.07500000000000001,
+          "sampled_nominal_step_width_m": 0.9606927466480081,
+          "actual_step_width_m": 0.9285714285714286,
+          "step_count": 28,
+          "total_elevation_change_m": 2.1000000000000005
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.1,
+      "地形seed": 112000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          1.0850000000000002
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.0850000000000002
+        ],
+        "vertex_count": 264,
+        "face_count": 396,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.1,
+          "seed": 112000,
+          "step_height_m": 0.035,
+          "sampled_nominal_step_width_m": 0.8605887998273701,
+          "actual_step_width_m": 0.8387096774193549,
+          "step_count": 31,
+          "total_elevation_change_m": -1.0850000000000002
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.5,
+      "地形seed": 112000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          1.87
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.87
+        ],
+        "vertex_count": 288,
+        "face_count": 432,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.5,
+          "seed": 112000,
+          "step_height_m": 0.055,
+          "sampled_nominal_step_width_m": 0.7753387247131047,
+          "actual_step_width_m": 0.7647058823529411,
+          "step_count": 34,
+          "total_elevation_change_m": -1.87
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.9,
+      "地形seed": 112000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          2.325
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.325
+        ],
+        "vertex_count": 264,
+        "face_count": 396,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.9,
+          "seed": 112000,
+          "step_height_m": 0.07500000000000001,
+          "sampled_nominal_step_width_m": 0.8432264398551552,
+          "actual_step_width_m": 0.8387096774193549,
+          "step_count": 31,
+          "total_elevation_change_m": -2.325
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 113000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.04694156276808249
+        ],
+        "vertex_count": 48,
+        "face_count": 66,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 113000,
+          "height_m": 0.052000000000000005,
+          "count": 5,
+          "instances": [
+            {
+              "x_center_m": 9.891410120185707,
+              "y_center_m": 5.449386848957632,
+              "forward_size_m": 0.519702919754637,
+              "lateral_size_m": 0.9356984436765245,
+              "height_m": 0.04584186132098075
+            },
+            {
+              "x_center_m": 11.158559272746096,
+              "y_center_m": 4.342959979616236,
+              "forward_size_m": 0.6777283022128424,
+              "lateral_size_m": 2.0281299856775643,
+              "height_m": 0.04114183365709274
+            },
+            {
+              "x_center_m": 12.735458847926125,
+              "y_center_m": 5.803575747800904,
+              "forward_size_m": 0.7927776154036112,
+              "lateral_size_m": 1.7083755153124005,
+              "height_m": 0.033261012594675655
+            },
+            {
+              "x_center_m": 13.963184798316814,
+              "y_center_m": 5.64508898012635,
+              "forward_size_m": 0.6680949730446546,
+              "lateral_size_m": 1.5169303323389964,
+              "height_m": 0.03490689656924082
+            },
+            {
+              "x_center_m": 15.199435773988187,
+              "y_center_m": 4.583340808371229,
+              "forward_size_m": 0.3933615656321696,
+              "lateral_size_m": 2.2881974997901224,
+              "height_m": 0.04694156276808249
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 113000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.09824311247151585
+        ],
+        "vertex_count": 64,
+        "face_count": 90,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 113000,
+          "height_m": 0.1,
+          "count": 7,
+          "instances": [
+            {
+              "x_center_m": 20.24479793162842,
+              "y_center_m": 4.1385469859013995,
+              "forward_size_m": 0.45007978510487734,
+              "lateral_size_m": 2.0977587391954007,
+              "height_m": 0.09824311247151585
+            },
+            {
+              "x_center_m": 21.88515861644846,
+              "y_center_m": 4.122818513470465,
+              "forward_size_m": 0.7782339254902539,
+              "lateral_size_m": 1.3619767247240528,
+              "height_m": 0.06887956394868865
+            },
+            {
+              "x_center_m": 23.549372047643036,
+              "y_center_m": 4.610298815245616,
+              "forward_size_m": 0.6127055883361073,
+              "lateral_size_m": 1.236139900535857,
+              "height_m": 0.0879346387886637
+            },
+            {
+              "x_center_m": 24.89167100082931,
+              "y_center_m": 4.654313130894978,
+              "forward_size_m": 0.4402723891224533,
+              "lateral_size_m": 0.8099261991325266,
+              "height_m": 0.0682872206275255
+            },
+            {
+              "x_center_m": 25.831193899756062,
+              "y_center_m": 5.171919617455551,
+              "forward_size_m": 0.4921926779867235,
+              "lateral_size_m": 1.539630580954885,
+              "height_m": 0.0625632092055297
+            },
+            {
+              "x_center_m": 27.291992759472436,
+              "y_center_m": 5.363047541172167,
+              "forward_size_m": 0.6053306673813508,
+              "lateral_size_m": 2.076356796430135,
+              "height_m": 0.06488629624290664
+            },
+            {
+              "x_center_m": 28.363793597971735,
+              "y_center_m": 4.357983754943465,
+              "forward_size_m": 0.5181191836699462,
+              "lateral_size_m": 1.4978173032452968,
+              "height_m": 0.05956024377939981
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 113000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.1367065103467696
+        ],
+        "vertex_count": 80,
+        "face_count": 114,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 113000,
+          "height_m": 0.148,
+          "count": 9,
+          "instances": [
+            {
+              "x_center_m": 14.161266326986294,
+              "y_center_m": 5.026146753037116,
+              "forward_size_m": 0.5421997911378831,
+              "lateral_size_m": 0.8725913366587899,
+              "height_m": 0.12895076413645537
+            },
+            {
+              "x_center_m": 15.443572215379664,
+              "y_center_m": 5.783993990849215,
+              "forward_size_m": 0.5108915940897849,
+              "lateral_size_m": 2.1638715464807063,
+              "height_m": 0.12607574711460942
+            },
+            {
+              "x_center_m": 17.07442886099632,
+              "y_center_m": 4.9852844683205735,
+              "forward_size_m": 0.7315292588686705,
+              "lateral_size_m": 2.0042340097581572,
+              "height_m": 0.13051124925619595
+            },
+            {
+              "x_center_m": 18.71467647186397,
+              "y_center_m": 4.849922798068033,
+              "forward_size_m": 0.7413145048361434,
+              "lateral_size_m": 1.5992865561975318,
+              "height_m": 0.1198414284472272
+            },
+            {
+              "x_center_m": 20.066940920053295,
+              "y_center_m": 4.327737842863667,
+              "forward_size_m": 0.48314841336877723,
+              "lateral_size_m": 1.3523541233676954,
+              "height_m": 0.1367065103467696
+            },
+            {
+              "x_center_m": 21.57938709628524,
+              "y_center_m": 4.539902254331696,
+              "forward_size_m": 0.38506394633943897,
+              "lateral_size_m": 1.7559182078810422,
+              "height_m": 0.12022252095991809
+            },
+            {
+              "x_center_m": 22.604264008407412,
+              "y_center_m": 4.3558817217008565,
+              "forward_size_m": 0.4127671100546295,
+              "lateral_size_m": 2.083134117181868,
+              "height_m": 0.1255342285310494
+            },
+            {
+              "x_center_m": 23.80122670154475,
+              "y_center_m": 4.444906815406132,
+              "forward_size_m": 0.46779263487419237,
+              "lateral_size_m": 0.8947936571218778,
+              "height_m": 0.10256612870716106
+            },
+            {
+              "x_center_m": 25.019346063000928,
+              "y_center_m": 4.267517415539745,
+              "forward_size_m": 0.5160668719879967,
+              "lateral_size_m": 1.5689155894891376,
+              "height_m": 0.13548461418923108
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.1,
+      "地形seed": 114000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.590228123912592
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.1,
+          "seed": 114000,
+          "slope_degrees": 3.5,
+          "total_elevation_change_m": 1.590228123912592
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.5,
+      "地形seed": 114000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.503515253136004
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.5,
+          "seed": 114000,
+          "slope_degrees": 5.5,
+          "total_elevation_change_m": 2.503515253136004
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.9,
+      "地形seed": 114000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          3.4229649372722917
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.9,
+          "seed": 114000,
+          "slope_degrees": 7.5,
+          "total_elevation_change_m": 3.4229649372722917
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.1,
+      "地形seed": 114000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          1.590228123912592
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.590228123912592
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.1,
+          "seed": 114000,
+          "slope_degrees": 3.5,
+          "total_elevation_change_m": -1.590228123912592
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.5,
+      "地形seed": 114000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          2.503515253136004
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.503515253136004
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.5,
+          "seed": 114000,
+          "slope_degrees": 5.5,
+          "total_elevation_change_m": -2.503515253136004
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_budget_train",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.9,
+      "地形seed": 114000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          3.4229649372722917
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          3.4229649372722917
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.9,
+          "seed": 114000,
+          "slope_degrees": 7.5,
+          "total_elevation_change_m": -3.4229649372722917
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 140000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 140000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 140000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 140000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 140000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 140000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 141000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.014876504507763788
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.01654657333509902
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 141000,
+          "height_m": 0.0195,
+          "correlation_m": 0.6674357320649115
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 141000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.03244007984964987
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.03399436589873069
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 141000,
+          "height_m": 0.0375,
+          "correlation_m": 0.8920518457795643
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 141000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.04866762666783305
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.047036008835124654
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 141000,
+          "height_m": 0.0555,
+          "correlation_m": 0.4640870539216688
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.1,
+      "地形seed": 142000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.155
+        ],
+        "vertex_count": 280,
+        "face_count": 420,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.1,
+          "seed": 142000,
+          "step_height_m": 0.035,
+          "sampled_nominal_step_width_m": 0.8004197551469105,
+          "actual_step_width_m": 0.7878787878787878,
+          "step_count": 33,
+          "total_elevation_change_m": 1.155
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.5,
+      "地形seed": 142000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.65
+        ],
+        "vertex_count": 256,
+        "face_count": 384,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.5,
+          "seed": 142000,
+          "step_height_m": 0.055,
+          "sampled_nominal_step_width_m": 0.8865409011094851,
+          "actual_step_width_m": 0.8666666666666667,
+          "step_count": 30,
+          "total_elevation_change_m": 1.65
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.9,
+      "地形seed": 142000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.0250000000000004
+        ],
+        "vertex_count": 232,
+        "face_count": 348,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.9,
+          "seed": 142000,
+          "step_height_m": 0.07500000000000001,
+          "sampled_nominal_step_width_m": 0.9794117433219993,
+          "actual_step_width_m": 0.9629629629629629,
+          "step_count": 27,
+          "total_elevation_change_m": 2.0250000000000004
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.1,
+      "地形seed": 142000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.8750000000000001
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.875
+        ],
+        "vertex_count": 216,
+        "face_count": 324,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.1,
+          "seed": 142000,
+          "step_height_m": 0.035,
+          "sampled_nominal_step_width_m": 1.052253511170729,
+          "actual_step_width_m": 1.04,
+          "step_count": 25,
+          "total_elevation_change_m": -0.8750000000000001
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.5,
+      "地形seed": 142000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          1.595
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.5949999999999998
+        ],
+        "vertex_count": 248,
+        "face_count": 372,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.5,
+          "seed": 142000,
+          "step_height_m": 0.055,
+          "sampled_nominal_step_width_m": 0.8969412118729501,
+          "actual_step_width_m": 0.896551724137931,
+          "step_count": 29,
+          "total_elevation_change_m": -1.595
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.9,
+      "地形seed": 142000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          2.1000000000000005
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.1000000000000005
+        ],
+        "vertex_count": 240,
+        "face_count": 360,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.9,
+          "seed": 142000,
+          "step_height_m": 0.07500000000000001,
+          "sampled_nominal_step_width_m": 0.9562481363962395,
+          "actual_step_width_m": 0.9285714285714286,
+          "step_count": 28,
+          "total_elevation_change_m": -2.1000000000000005
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 143000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.04449078011953424
+        ],
+        "vertex_count": 48,
+        "face_count": 66,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 143000,
+          "height_m": 0.052000000000000005,
+          "count": 5,
+          "instances": [
+            {
+              "x_center_m": 23.007070653713715,
+              "y_center_m": 5.584133239020585,
+              "forward_size_m": 0.5526074897578124,
+              "lateral_size_m": 1.9237397789788575,
+              "height_m": 0.02975777068195179
+            },
+            {
+              "x_center_m": 24.013411077070177,
+              "y_center_m": 4.570181194328355,
+              "forward_size_m": 0.39297524132518835,
+              "lateral_size_m": 1.6251937724453032,
+              "height_m": 0.04449078011953424
+            },
+            {
+              "x_center_m": 25.63859110169849,
+              "y_center_m": 5.6797049860519,
+              "forward_size_m": 0.7719950850924797,
+              "lateral_size_m": 1.7652854375111966,
+              "height_m": 0.03741813529285458
+            },
+            {
+              "x_center_m": 27.28449625988349,
+              "y_center_m": 4.573341374691036,
+              "forward_size_m": 0.781353365896065,
+              "lateral_size_m": 1.122050335777582,
+              "height_m": 0.03411392765244366
+            },
+            {
+              "x_center_m": 28.798209163206714,
+              "y_center_m": 4.92979578796289,
+              "forward_size_m": 0.5018194106286472,
+              "lateral_size_m": 1.2611377845049072,
+              "height_m": 0.03029161341985817
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 143000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.09565143896257117
+        ],
+        "vertex_count": 64,
+        "face_count": 90,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 143000,
+          "height_m": 0.1,
+          "count": 7,
+          "instances": [
+            {
+              "x_center_m": 18.178639786280595,
+              "y_center_m": 5.411531797039401,
+              "forward_size_m": 0.5132648634976309,
+              "lateral_size_m": 1.1207407295728047,
+              "height_m": 0.05864965109534459
+            },
+            {
+              "x_center_m": 19.42426551067817,
+              "y_center_m": 4.236517892200823,
+              "forward_size_m": 0.7018839503286163,
+              "lateral_size_m": 1.9568445800815362,
+              "height_m": 0.0808813085961903
+            },
+            {
+              "x_center_m": 21.0702939945974,
+              "y_center_m": 4.959748307565428,
+              "forward_size_m": 0.571625695586534,
+              "lateral_size_m": 1.8075636580049967,
+              "height_m": 0.07487372253001337
+            },
+            {
+              "x_center_m": 22.479256458732383,
+              "y_center_m": 4.966532628282998,
+              "forward_size_m": 0.6328264716599292,
+              "lateral_size_m": 1.2521688695810735,
+              "height_m": 0.06540197227769602
+            },
+            {
+              "x_center_m": 23.607421817022825,
+              "y_center_m": 4.708474738077563,
+              "forward_size_m": 0.5611981628819722,
+              "lateral_size_m": 2.0922500207215595,
+              "height_m": 0.07434955044616307
+            },
+            {
+              "x_center_m": 24.840380866769536,
+              "y_center_m": 5.637629436986399,
+              "forward_size_m": 0.6713142845452075,
+              "lateral_size_m": 1.6914934790790968,
+              "height_m": 0.09565143896257117
+            },
+            {
+              "x_center_m": 26.421136564581026,
+              "y_center_m": 4.375879177915502,
+              "forward_size_m": 0.6711572580494333,
+              "lateral_size_m": 1.3349352881992176,
+              "height_m": 0.08828567752349603
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 143000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.11750182414885431
+        ],
+        "vertex_count": 80,
+        "face_count": 114,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 143000,
+          "height_m": 0.148,
+          "count": 9,
+          "instances": [
+            {
+              "x_center_m": 8.037748769198542,
+              "y_center_m": 4.790948578455077,
+              "forward_size_m": 0.7186035373297144,
+              "lateral_size_m": 0.8169383740241747,
+              "height_m": 0.11750182414885431
+            },
+            {
+              "x_center_m": 9.055434682025828,
+              "y_center_m": 4.9778372857721065,
+              "forward_size_m": 0.39991424031879286,
+              "lateral_size_m": 1.833371753766362,
+              "height_m": 0.0949173855511351
+            },
+            {
+              "x_center_m": 10.070672016601192,
+              "y_center_m": 4.532492853228839,
+              "forward_size_m": 0.5970373154638249,
+              "lateral_size_m": 0.9975647294950676,
+              "height_m": 0.09713400580675442
+            },
+            {
+              "x_center_m": 11.362438847665901,
+              "y_center_m": 5.292491580975051,
+              "forward_size_m": 0.5407559459394145,
+              "lateral_size_m": 2.282656062480576,
+              "height_m": 0.11691695289608289
+            },
+            {
+              "x_center_m": 12.645802177153085,
+              "y_center_m": 5.746435835017836,
+              "forward_size_m": 0.7799545173797745,
+              "lateral_size_m": 1.2393755582780108,
+              "height_m": 0.09517832438782056
+            },
+            {
+              "x_center_m": 13.772346844252207,
+              "y_center_m": 5.8503125860318175,
+              "forward_size_m": 0.5118270716167379,
+              "lateral_size_m": 1.4970148401397423,
+              "height_m": 0.10032222495672159
+            },
+            {
+              "x_center_m": 14.968347295800825,
+              "y_center_m": 5.62531292488064,
+              "forward_size_m": 0.6013252737995352,
+              "lateral_size_m": 2.228671924543339,
+              "height_m": 0.08754001392169886
+            },
+            {
+              "x_center_m": 16.583194576202693,
+              "y_center_m": 4.363521455336655,
+              "forward_size_m": 0.44041731447033394,
+              "lateral_size_m": 2.2141823408955745,
+              "height_m": 0.0833321477082442
+            },
+            {
+              "x_center_m": 18.266160436181316,
+              "y_center_m": 4.956775385198372,
+              "forward_size_m": 0.7999378278176881,
+              "lateral_size_m": 0.8080204164100229,
+              "height_m": 0.09304214756400465
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.1,
+      "地形seed": 144000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.590228123912592
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.1,
+          "seed": 144000,
+          "slope_degrees": 3.5,
+          "total_elevation_change_m": 1.590228123912592
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.5,
+      "地形seed": 144000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.503515253136004
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.5,
+          "seed": 144000,
+          "slope_degrees": 5.5,
+          "total_elevation_change_m": 2.503515253136004
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.9,
+      "地形seed": 144000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          3.4229649372722917
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.9,
+          "seed": 144000,
+          "slope_degrees": 7.5,
+          "total_elevation_change_m": 3.4229649372722917
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.1,
+      "地形seed": 144000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          1.590228123912592
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.590228123912592
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.1,
+          "seed": 144000,
+          "slope_degrees": 3.5,
+          "total_elevation_change_m": -1.590228123912592
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.5,
+      "地形seed": 144000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          2.503515253136004
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.503515253136004
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.5,
+          "seed": 144000,
+          "slope_degrees": 5.5,
+          "total_elevation_change_m": -2.503515253136004
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_calibration",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.9,
+      "地形seed": 144000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          3.4229649372722917
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          3.4229649372722917
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.9,
+          "seed": 144000,
+          "slope_degrees": 7.5,
+          "total_elevation_change_m": -3.4229649372722917
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 150000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 150000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 150000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 150000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "flat",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 150000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "flat",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 150000
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 151000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.015462241376002349
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.016543389384523453
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 151000,
+          "height_m": 0.0195,
+          "correlation_m": 0.4708378464156161
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 151000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.030493319279826323
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.0375
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 151000,
+          "height_m": 0.0375,
+          "correlation_m": 0.6130651153212017
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "rough",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 151000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.0555
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.05228509387030158
+        ],
+        "vertex_count": 10251,
+        "face_count": 20000,
+        "watertight": false,
+        "parameters": {
+          "category": "rough",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 151000,
+          "height_m": 0.0555,
+          "correlation_m": 0.8673168328506116
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.1,
+      "地形seed": 152000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.05
+        ],
+        "vertex_count": 256,
+        "face_count": 384,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.1,
+          "seed": 152000,
+          "step_height_m": 0.035,
+          "sampled_nominal_step_width_m": 0.8848200087381202,
+          "actual_step_width_m": 0.8666666666666667,
+          "step_count": 30,
+          "total_elevation_change_m": 1.05
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.5,
+      "地形seed": 152000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.375
+        ],
+        "vertex_count": 216,
+        "face_count": 324,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.5,
+          "seed": 152000,
+          "step_height_m": 0.055,
+          "sampled_nominal_step_width_m": 1.0429200795232862,
+          "actual_step_width_m": 1.04,
+          "step_count": 25,
+          "total_elevation_change_m": 1.375
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "stairs",
+      "方向": "up",
+      "难度连续值": 0.9,
+      "地形seed": 152000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.875
+        ],
+        "vertex_count": 216,
+        "face_count": 324,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "up",
+          "difficulty": 0.9,
+          "seed": 152000,
+          "step_height_m": 0.07500000000000001,
+          "sampled_nominal_step_width_m": 1.0693461925063985,
+          "actual_step_width_m": 1.04,
+          "step_count": 25,
+          "total_elevation_change_m": 1.8750000000000002
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.1,
+      "地形seed": 152000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          1.155
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.155
+        ],
+        "vertex_count": 280,
+        "face_count": 420,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.1,
+          "seed": 152000,
+          "step_height_m": 0.035,
+          "sampled_nominal_step_width_m": 0.7913738449078317,
+          "actual_step_width_m": 0.7878787878787878,
+          "step_count": 33,
+          "total_elevation_change_m": -1.155
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.5,
+      "地形seed": 152000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          1.76
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.7599999999999998
+        ],
+        "vertex_count": 272,
+        "face_count": 408,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.5,
+          "seed": 152000,
+          "step_height_m": 0.055,
+          "sampled_nominal_step_width_m": 0.8233673310513433,
+          "actual_step_width_m": 0.8125,
+          "step_count": 32,
+          "total_elevation_change_m": -1.76
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "stairs",
+      "方向": "down",
+      "难度连续值": 0.9,
+      "地形seed": 152000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          2.2500000000000004
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          -0.5
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.2500000000000004
+        ],
+        "vertex_count": 256,
+        "face_count": 384,
+        "watertight": true,
+        "parameters": {
+          "category": "stairs",
+          "direction": "down",
+          "difficulty": 0.9,
+          "seed": 152000,
+          "step_height_m": 0.07500000000000001,
+          "sampled_nominal_step_width_m": 0.8780527024370195,
+          "actual_step_width_m": 0.8666666666666667,
+          "step_count": 30,
+          "total_elevation_change_m": -2.2500000000000004
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.1,
+      "地形seed": 153000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.05199591640497408
+        ],
+        "vertex_count": 48,
+        "face_count": 66,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.1,
+          "seed": 153000,
+          "height_m": 0.052000000000000005,
+          "count": 5,
+          "instances": [
+            {
+              "x_center_m": 8.874924669896897,
+              "y_center_m": 5.762972430329649,
+              "forward_size_m": 0.44767420086202203,
+              "lateral_size_m": 1.718697993199291,
+              "height_m": 0.039408901782808814
+            },
+            {
+              "x_center_m": 9.968185208567867,
+              "y_center_m": 5.161255432927339,
+              "forward_size_m": 0.36516779502479874,
+              "lateral_size_m": 1.875048500299785,
+              "height_m": 0.05199591640497408
+            },
+            {
+              "x_center_m": 11.497148867661048,
+              "y_center_m": 4.9509141808618535,
+              "forward_size_m": 0.5906188646987374,
+              "lateral_size_m": 1.0118767796550006,
+              "height_m": 0.04974830771260371
+            },
+            {
+              "x_center_m": 12.764259489277595,
+              "y_center_m": 5.110595956693868,
+              "forward_size_m": 0.531886879767459,
+              "lateral_size_m": 1.5993037559879273,
+              "height_m": 0.0417424989632573
+            },
+            {
+              "x_center_m": 14.196615740480652,
+              "y_center_m": 5.20394980744662,
+              "forward_size_m": 0.45066338494666924,
+              "lateral_size_m": 1.7191752574243746,
+              "height_m": 0.03634956339537234
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.5,
+      "地形seed": 153000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.09933331591036987
+        ],
+        "vertex_count": 64,
+        "face_count": 90,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.5,
+          "seed": 153000,
+          "height_m": 0.1,
+          "count": 7,
+          "instances": [
+            {
+              "x_center_m": 11.669386332247129,
+              "y_center_m": 4.427736827628182,
+              "forward_size_m": 0.6481323795664782,
+              "lateral_size_m": 1.0195352283702317,
+              "height_m": 0.07317534541962417
+            },
+            {
+              "x_center_m": 13.247699508127845,
+              "y_center_m": 5.49761514331582,
+              "forward_size_m": 0.7474223520186118,
+              "lateral_size_m": 1.1781347275383225,
+              "height_m": 0.0642548378245308
+            },
+            {
+              "x_center_m": 14.521497934141566,
+              "y_center_m": 5.135810396038413,
+              "forward_size_m": 0.5105741541056359,
+              "lateral_size_m": 1.8030072860128101,
+              "height_m": 0.05544050823979049
+            },
+            {
+              "x_center_m": 15.770744904643848,
+              "y_center_m": 4.127962863364694,
+              "forward_size_m": 0.7127778593657279,
+              "lateral_size_m": 1.9348755021604347,
+              "height_m": 0.06919461851571118
+            },
+            {
+              "x_center_m": 16.85017249900781,
+              "y_center_m": 4.550575460794527,
+              "forward_size_m": 0.5427731335150372,
+              "lateral_size_m": 1.2287002049468014,
+              "height_m": 0.09933331591036987
+            },
+            {
+              "x_center_m": 17.991555183949878,
+              "y_center_m": 4.948608776099535,
+              "forward_size_m": 0.42531251214232313,
+              "lateral_size_m": 2.306479397806333,
+              "height_m": 0.08517103993516163
+            },
+            {
+              "x_center_m": 19.240426233319365,
+              "y_center_m": 5.15204214062034,
+              "forward_size_m": 0.5567217306786603,
+              "lateral_size_m": 2.076011914705812,
+              "height_m": 0.09601798089335076
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "boxes",
+      "方向": "level",
+      "难度连续值": 0.9,
+      "地形seed": 153000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "箱块不封死长地形宽度": true,
+        "箱块位于有效几何段": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          0.143839648484994
+        ],
+        "vertex_count": 80,
+        "face_count": 114,
+        "watertight": false,
+        "parameters": {
+          "category": "boxes",
+          "direction": "level",
+          "difficulty": 0.9,
+          "seed": 153000,
+          "height_m": 0.148,
+          "count": 9,
+          "instances": [
+            {
+              "x_center_m": 11.011180262449649,
+              "y_center_m": 5.811983267107138,
+              "forward_size_m": 0.589139904184607,
+              "lateral_size_m": 1.8748988298165095,
+              "height_m": 0.08274658685385253
+            },
+            {
+              "x_center_m": 12.111848935911794,
+              "y_center_m": 5.4412648895675835,
+              "forward_size_m": 0.6531459812916491,
+              "lateral_size_m": 0.806883626389063,
+              "height_m": 0.1218134788335586
+            },
+            {
+              "x_center_m": 13.465874782079737,
+              "y_center_m": 4.616238202782325,
+              "forward_size_m": 0.6243383146916205,
+              "lateral_size_m": 2.379713251083057,
+              "height_m": 0.0985300926408256
+            },
+            {
+              "x_center_m": 14.956863736089929,
+              "y_center_m": 5.655161825711372,
+              "forward_size_m": 0.6738062016819907,
+              "lateral_size_m": 1.3443976091564431,
+              "height_m": 0.143839648484994
+            },
+            {
+              "x_center_m": 16.41441309803298,
+              "y_center_m": 4.566496795148754,
+              "forward_size_m": 0.6313722724850697,
+              "lateral_size_m": 1.021331476622033,
+              "height_m": 0.12669848329456204
+            },
+            {
+              "x_center_m": 17.927189143683417,
+              "y_center_m": 4.482398613772537,
+              "forward_size_m": 0.7661800506974081,
+              "lateral_size_m": 2.363952105846752,
+              "height_m": 0.13715920372366044
+            },
+            {
+              "x_center_m": 19.17896682130369,
+              "y_center_m": 4.685443420591056,
+              "forward_size_m": 0.6483715416945675,
+              "lateral_size_m": 1.5635694465825813,
+              "height_m": 0.09139517585861874
+            },
+            {
+              "x_center_m": 20.343122468095864,
+              "y_center_m": 5.8511930327093715,
+              "forward_size_m": 0.7037472539994352,
+              "lateral_size_m": 1.3028212096887424,
+              "height_m": 0.09979847039388558
+            },
+            {
+              "x_center_m": 21.84423929002333,
+              "y_center_m": 4.5173930469902785,
+              "forward_size_m": 0.7555546493901473,
+              "lateral_size_m": 1.0494270214373742,
+              "height_m": 0.12384188110501186
+            }
+          ]
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.1,
+      "地形seed": 154000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.590228123912592
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.1,
+          "seed": 154000,
+          "slope_degrees": 3.5,
+          "total_elevation_change_m": 1.590228123912592
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.5,
+      "地形seed": 154000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.503515253136004
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.5,
+          "seed": 154000,
+          "slope_degrees": 5.5,
+          "total_elevation_change_m": 2.503515253136004
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "slope",
+      "方向": "up",
+      "难度连续值": 0.9,
+      "地形seed": 154000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          0.0
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          3.4229649372722917
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "up",
+          "difficulty": 0.9,
+          "seed": 154000,
+          "slope_degrees": 7.5,
+          "total_elevation_change_m": 3.4229649372722917
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.1,
+      "地形seed": 154000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          1.590228123912592
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          1.590228123912592
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.1,
+          "seed": 154000,
+          "slope_degrees": 3.5,
+          "total_elevation_change_m": -1.590228123912592
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.5,
+      "地形seed": 154000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          2.503515253136004
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          2.503515253136004
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.5,
+          "seed": 154000,
+          "slope_degrees": 5.5,
+          "total_elevation_change_m": -2.503515253136004
+        },
+        "active_end_x_m": 34.0
+      }
+    },
+    {
+      "角色": "stage1_holdout",
+      "地形": "slope",
+      "方向": "down",
+      "难度连续值": 0.9,
+      "地形seed": 154000,
+      "检查": {
+        "覆盖完整长地形块x": true,
+        "覆盖完整长地形块y": true,
+        "origin位于冻结出生中心线": true,
+        "前向30m审计线仍在块内且余量5m": true,
+        "后向2m审计线仍在块内且余量3m": true,
+        "侧向3m审计线仍有2m余量": true,
+        "有效几何末端留6m尾部": true,
+        "存在碰撞三角面": true,
+        "上下行符号正确": true,
+        "斜坡有限且不超过8度": true
+      },
+      "几何": {
+        "origin": [
+          5.0,
+          5.0,
+          3.4229649372722917
+        ],
+        "bounds_min": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "bounds_max": [
+          40.0,
+          10.0,
+          3.4229649372722917
+        ],
+        "vertex_count": 8,
+        "face_count": 6,
+        "watertight": false,
+        "parameters": {
+          "category": "slope",
+          "direction": "down",
+          "difficulty": 0.9,
+          "seed": 154000,
+          "slope_degrees": 7.5,
+          "total_elevation_change_m": -3.4229649372722917
+        },
+        "active_end_x_m": 34.0
+      }
+    }
+  ]
+}
