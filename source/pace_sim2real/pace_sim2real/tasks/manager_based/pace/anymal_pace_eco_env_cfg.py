@@ -48,6 +48,9 @@ class PaceEnergyCfg:
     # frozen-policy full episodes before multi-seed training.
     episode_budget_j: float = 10_000.0
     failure_barrier: float = 1.25
+    # Evaluation-only opt-in. When enabled, PaceEnergyRLEnv publishes the
+    # terminal control-step state before Isaac Lab automatically resets an env.
+    publish_eval_state: bool = False
 
 
 @configclass

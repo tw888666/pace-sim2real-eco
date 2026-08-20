@@ -84,6 +84,14 @@ class PaceEnergyRLEnv(ManagerBasedRLEnv):
         for name in ("electrical", "mechanical", "potential"):
             self.extras[f"pace_step_{name}_energy_j"] = control[name]
 
+    def _publish_eval_state(self) -> None:
+        """Publish the post-physics state before automatic environment resets."""
+        if not bool(getattr(self.cfg.pace_energy, "publish_eval_state", False)):
+            return
+        robot = self.scene["robot"]
+        self.extras["pace_eval_root_pos_w"] = robot.data.root_pos_w.clone()
+        self.extras["pace_eval_root_lin_vel_b"] = robot.data.root_lin_vel_b.clone()
+
     def step(self, action: torch.Tensor):
         """Execute one policy step and integrate PACE energy after every physics step."""
         self.action_manager.process_action(action.to(self.device))
@@ -109,6 +117,7 @@ class PaceEnergyRLEnv(ManagerBasedRLEnv):
         self.reset_time_outs = self.termination_manager.time_outs
         self.reward_buf = self.reward_manager.compute(dt=self.step_dt)
         self._publish_pace_cost()
+        self._publish_eval_state()
 
         if len(self.recorder_manager.active_terms) > 0:
             self.obs_buf = self.observation_manager.compute()
