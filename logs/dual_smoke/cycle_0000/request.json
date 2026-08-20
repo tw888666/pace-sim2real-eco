@@ -1,7 +1,0 @@
-{
-  "budget_j": 10000.0,
-  "checkpoint_path": "/home/xy.chen/tw/isaaclab_ws/pace-sim2real/logs/dual_smoke/cycle_0000/checkpoint.pt",
-  "checkpoint_sha256": "16e71e06dc18e0762c1a38261fe2a608d9bd4a8b9e414510c791009379a2ea13",
-  "cycle_id": 0,
-  "schema_version": 1
-}

@@ -1,7 +1,0 @@
-{
-  "budget_j": 26072.25390625,
-  "checkpoint_path": "/home/xy.chen/tw/isaaclab_ws/pace-sim2real/logs/calibration_b100/dual/cycle_0000/checkpoint.pt",
-  "checkpoint_sha256": "b3c7762bca0159b54869fdad99fef93bc1a1cbadd8996ad30af772efa50f4ac3",
-  "cycle_id": 0,
-  "schema_version": 1
-}
