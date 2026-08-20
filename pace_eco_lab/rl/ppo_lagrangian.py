@@ -250,7 +250,9 @@ class PPOLagrangian(PacePPO):
         saved_budget = float(loaded_dict.get("energy_budget_j", self.energy_budget_j))
         if abs(saved_budget - self.energy_budget_j) > 1.0e-9:
             raise ValueError(f"恢复预算不一致：检查点 {saved_budget} J，当前 {self.energy_budget_j} J。")
-        with torch.no_grad():
-            self.lagrange_multiplier.copy_(loaded_dict["lagrange_multiplier"].to(self.device))
-        self.lagrange_optimizer.load_state_dict(loaded_dict["lagrange_optimizer_state_dict"])
+        if load_cfg is None or bool(load_cfg.get("lagrange_multiplier", False)):
+            with torch.no_grad():
+                self.lagrange_multiplier.copy_(loaded_dict["lagrange_multiplier"].to(self.device))
+        if load_cfg is None or bool(load_cfg.get("lagrange_optimizer", False)):
+            self.lagrange_optimizer.load_state_dict(loaded_dict["lagrange_optimizer_state_dict"])
         return load_iteration

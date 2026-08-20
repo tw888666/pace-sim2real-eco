@@ -89,18 +89,19 @@ class PacePPO(PPO):
 
     def load(self, loaded_dict: dict, load_cfg: dict | None, strict: bool) -> bool:
         load_iteration = super().load(loaded_dict, load_cfg, strict)
-        self.pace_iteration = int(loaded_dict.get("pace_iteration", loaded_dict.get("iter", 0)))
-        self.entropy_coef = float(
-            loaded_dict.get(
-                "pace_entropy_coefficient",
-                entropy_coefficient(
-                    self.pace_iteration,
-                    initial=self.entropy_initial,
-                    final=self.entropy_final,
-                    turnover=self.entropy_turnover_iteration,
-                    slope=self.entropy_slope,
-                ),
+        if load_cfg is None or bool(load_cfg.get("iteration", False)):
+            self.pace_iteration = int(loaded_dict.get("pace_iteration", loaded_dict.get("iter", 0)))
+            self.entropy_coef = float(
+                loaded_dict.get(
+                    "pace_entropy_coefficient",
+                    entropy_coefficient(
+                        self.pace_iteration,
+                        initial=self.entropy_initial,
+                        final=self.entropy_final,
+                        turnover=self.entropy_turnover_iteration,
+                        slope=self.entropy_slope,
+                    ),
+                )
             )
-        )
-        self._sync_environment_iteration()
+            self._sync_environment_iteration()
         return load_iteration

@@ -114,6 +114,15 @@ def _one_update(algorithm_class, class_name: str, constrained: bool):
     return algorithm, algorithm.update()
 
 
+def _lagrangian_algorithm() -> PPOLagrangian:
+    return PPOLagrangian.construct_algorithm(
+        _observations(),
+        FakeEnvironment(),
+        _config("pace_eco_lab.rl.ppo_lagrangian:PPOLagrangian", True),
+        "cpu",
+    )
+
+
 def test_pace_ppo_runs_one_rsl_rl_update():
     algorithm, losses = _one_update(PacePPO, "pace_eco_lab.rl.ppo:PacePPO", False)
     assert algorithm.pace_iteration == 1
@@ -130,3 +139,62 @@ def test_lagrangian_runs_one_update_and_uses_complete_episode_cost():
     assert losses["normalized_episode_cost"] == pytest.approx(1.2)
     assert losses["lagrange_multiplier"] > 0.0
     assert set(losses) >= {"cost_surrogate", "constraint_violation"}
+
+
+def test_actor_only_load_preserves_training_only_state():
+    source = _lagrangian_algorithm()
+    source.pace_iteration = 17
+    source.entropy_coef = 0.00123
+    with torch.no_grad():
+        source.lagrange_multiplier.fill_(3.0)
+        next(source.actor.parameters()).fill_(0.25)
+    saved = source.save()
+
+    target = _lagrangian_algorithm()
+    target.pace_iteration = 91
+    target.entropy_coef = 0.0091
+    with torch.no_grad():
+        target.lagrange_multiplier.fill_(0.75)
+        next(target.actor.parameters()).zero_()
+    optimizer_state = target.lagrange_optimizer.state_dict()
+
+    load_iteration = target.load(
+        saved,
+        load_cfg={
+            "actor": True,
+            "critic": False,
+            "optimizer": False,
+            "iteration": False,
+            "rnd": False,
+            "lagrange_multiplier": False,
+            "lagrange_optimizer": False,
+        },
+        strict=True,
+    )
+
+    assert not load_iteration
+    assert torch.equal(next(target.actor.parameters()), next(source.actor.parameters()))
+    assert target.pace_iteration == 91
+    assert target.entropy_coef == pytest.approx(0.0091)
+    assert target.lagrange_multiplier.item() == pytest.approx(0.75)
+    assert target.lagrange_optimizer.state_dict() == optimizer_state
+
+
+def test_full_load_restores_training_state():
+    source = _lagrangian_algorithm()
+    source.pace_iteration = 23
+    source.entropy_coef = 0.0017
+    with torch.no_grad():
+        source.lagrange_multiplier.fill_(2.5)
+    saved = source.save()
+
+    target = _lagrangian_algorithm()
+    target.pace_iteration = 3
+    target.entropy_coef = 0.01
+    with torch.no_grad():
+        target.lagrange_multiplier.zero_()
+
+    assert target.load(saved, load_cfg=None, strict=True)
+    assert target.pace_iteration == 23
+    assert target.entropy_coef == pytest.approx(0.0017)
+    assert target.lagrange_multiplier.item() == pytest.approx(2.5)
