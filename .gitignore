@@ -77,4 +77,9 @@ _build
 /data/pace_eco/
 /logs/
 /outputs/
+# Externalized experiment assets. These exact paths are compatibility links to
+# /home/xy.chen/tw/experiment-data and /home/xy.chen/tw/dataset.
+/pace_data
+/results/terrain_evaluation
+/results/supplementary/fixed_weight_grid_v2
 *.pdf
