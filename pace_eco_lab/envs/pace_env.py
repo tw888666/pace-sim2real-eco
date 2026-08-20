@@ -7,6 +7,7 @@ import torch
 from isaaclab.assets import Articulation
 from isaaclab.envs import ManagerBasedRLEnv
 
+from pace_eco_lab.evaluation_snapshot import publish_eval_state
 from pace_eco_lab.mdp.energy import compute_energy_components
 
 
@@ -54,6 +55,19 @@ class PaceManagerBasedRLEnv(ManagerBasedRLEnv):
         self.pace_energy_components["mechanical"].add_(power.mechanical * dt)
         self.pace_energy_components["potential"].add_(power.potential * dt)
 
+    def _publish_eval_state(self) -> None:
+        """在自动重置前发布只读根状态，供定距地形评估冻结终点。"""
+
+        if not bool(getattr(self.cfg, "pace_publish_eval_state", False)):
+            return
+        robot: Articulation = self.scene["robot"]
+        publish_eval_state(
+            self.extras,
+            robot.data.root_pos_w,
+            robot.data.root_lin_vel_b,
+            enabled=True,
+        )
+
     def step(self, action: torch.Tensor):
         """复制官方 0.54.4 步进顺序，并在每个物理子步后积分实际量。"""
 
@@ -87,6 +101,7 @@ class PaceManagerBasedRLEnv(ManagerBasedRLEnv):
         self.reset_terminated = self.termination_manager.terminated
         self.reset_time_outs = self.termination_manager.time_outs
         self.reward_buf = self.reward_manager.compute(dt=self.step_dt)
+        self._publish_eval_state()
 
         if len(self.recorder_manager.active_terms) > 0:
             self.obs_buf = self.observation_manager.compute()

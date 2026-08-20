@@ -321,6 +321,8 @@ class PaceTaskOnlyEnvCfg(ManagerBasedRLEnvCfg):
     events: EventsCfg = EventsCfg()
     curriculum: CurriculumCfg = CurriculumCfg()
     pace_include_potential: bool = True
+    # 仅由地形评估入口打开；训练保持 False，避免增加训练步进开销。
+    pace_publish_eval_state: bool = False
 
     def __post_init__(self):
         self.scene.robot = make_pace_anymal_d_cfg()
