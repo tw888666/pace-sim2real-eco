@@ -81,4 +81,5 @@ _build
 
 # PACE-ECO 多地形实验运行产物与外部标定数据
 /results/supplementary/multi_terrain_v1_4/
+/pace_data
 *.npy
