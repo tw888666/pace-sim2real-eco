@@ -40,14 +40,15 @@ case "${role_suffix}" in
         max_iterations=3000
         num_envs=4096
         pace_direction_require_tmux
-        pace_direction_require_clean_worktree
+        # 新运行要求干净工作树；续训由 Python 侧逐项校验原运行配置和检查点。
+        if [[ -z "${resume_checkpoint}" ]]; then pace_direction_require_clean_worktree; fi
         ;;
     formal_train)
         pace_direction_validate_ppo_seed "${stage}_formal" "${ppo_seed}"
         max_iterations=3000
         num_envs=4096
         pace_direction_require_tmux
-        pace_direction_require_clean_worktree
+        if [[ -z "${resume_checkpoint}" ]]; then pace_direction_require_clean_worktree; fi
         ;;
     *) pace_direction_fail "未知 v2 训练角色：${role_suffix}" ;;
 esac

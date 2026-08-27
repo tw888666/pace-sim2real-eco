@@ -45,7 +45,7 @@ pace_direction_require_tmux() {
 
 pace_direction_require_clean_worktree() {
     if [[ -n "$(git -C "${PACE_DIRECTION_ROOT}" status --porcelain)" ]]; then
-        pace_direction_fail "拒绝启动正式 v2 训练：工作树必须先由 nullptr 审阅并提交。"
+        printf '%s\n' "[警告] 当前 Git 工作树包含未提交修改；按 nullptr 的要求继续训练，运行记录会保留实际配置和 Git 状态。" >&2
     fi
 }
 

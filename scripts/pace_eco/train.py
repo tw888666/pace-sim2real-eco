@@ -24,6 +24,12 @@ parser.add_argument("--energy_budget_j", type=float, default=None, help="PACE-EC
 parser.add_argument("--terrain_seed", type=int, default=None, help="多地形生成随机种子；与 PPO seed 独立。")
 parser.add_argument("--protocol_role", type=str, default=None, help="多地形冻结 seed 角色。")
 parser.add_argument(
+    "--direction_protocol_version",
+    choices=("v2.1", "v2.2"),
+    default="v2.1",
+    help="方向条件协议版本；旧入口默认保持 v2.1。",
+)
+parser.add_argument(
     "--fixed_energy_weight",
     type=float,
     default=None,
@@ -65,6 +71,17 @@ from pace_eco_lab.direction_conditioned_protocol import (
     PROTOCOL_VERSION as DIRECTION_PROTOCOL_VERSION,
     TASK_IDS as DIRECTION_TASK_IDS,
     terrain_seed as direction_terrain_seed,
+)
+from pace_eco_lab.direction_conditioned_v2_2_protocol import (
+    DIRECTION_CONDITIONED_V2_2_TASK_IDS,
+    FIXED_ENERGY_REWARD_WEIGHT,
+    FIXED_WEIGHT_LABEL as DIRECTION_V2_2_FIXED_WEIGHT_LABEL,
+    PROTOCOL_VERSION as DIRECTION_V2_2_PROTOCOL_VERSION,
+    SMOKE_SEED as DIRECTION_V2_2_SMOKE_SEED,
+    SOURCE_PROTOCOL_VERSION as DIRECTION_V2_2_SOURCE_PROTOCOL_VERSION,
+    TASK_IDS as DIRECTION_V2_2_TASK_IDS,
+    is_new_training_target as is_direction_v2_2_new_training_target,
+    terrain_seed as direction_v2_2_terrain_seed,
 )
 from pace_eco_lab.multi_terrain_protocol import (
     MULTI_TERRAIN_TASK_IDS,
@@ -274,6 +291,80 @@ def _configure_direction_conditioned_protocol(env_cfg, agent_cfg) -> str:
     return method
 
 
+def _configure_direction_conditioned_v2_2_protocol(env_cfg, agent_cfg) -> str:
+    """配置只允许出现在 v2.2 新训练清单中的 E2 三方法任务。"""
+
+    inverse = {task_id: key for key, task_id in DIRECTION_V2_2_TASK_IDS.items()}
+    variant, method, terrain = inverse[args_cli.task]
+    formal = args_cli.protocol_role == "stage1_formal_train"
+    smoke = args_cli.protocol_role == "stage1_smoke_train"
+    if not formal and not smoke:
+        raise ValueError("方向条件 v2.2 只允许 stage1_smoke_train 或 stage1_formal_train。")
+    if variant != "directional":
+        raise ValueError("方向条件 v2.2 主矩阵只允许 E2 directional。")
+    if smoke and (method != "fixed_weight" or terrain != "flat" or args_cli.seed != DIRECTION_V2_2_SMOKE_SEED):
+        raise ValueError("v2.2 smoke 只允许 flat fixed_weight seed902。")
+    if formal and not is_direction_v2_2_new_training_target(method, terrain, args_cli.seed):
+        raise ValueError(
+            f"{method}/{terrain}/seed{args_cli.seed} 不属于 v2.2 新训练清单；"
+            "已迁移的 v2.1 模型禁止重复训练。"
+        )
+    expected_iterations = 3_000 if formal else 2
+    expected_envs = 4_096 if formal else 16
+    if args_cli.max_iterations != expected_iterations or env_cfg.scene.num_envs != expected_envs:
+        raise ValueError(
+            f"方向条件 v2.2 {args_cli.protocol_role} 冻结为 "
+            f"{expected_envs} 环境/{expected_iterations} 次更新。"
+        )
+    if smoke != ("smoke" in args_cli.run_name.lower()):
+        raise ValueError("方向条件 v2.2 smoke 角色与 run_name 标记不一致。")
+    expected_terrain_seed = direction_v2_2_terrain_seed(
+        args_cli.protocol_role,
+        terrain,
+        args_cli.seed,
+    )
+    if args_cli.terrain_seed != expected_terrain_seed:
+        raise ValueError(
+            f"v2.2 地形 seed 不符合配对映射：期望 {expected_terrain_seed}，"
+            f"实际 {args_cli.terrain_seed}。"
+        )
+    env_cfg.pace_terrain_seed = int(args_cli.terrain_seed)
+    env_cfg.scene.terrain.terrain_generator.seed = int(args_cli.terrain_seed)
+    if args_cli.fixed_energy_weight is not None or args_cli.fixed_selection_json is not None:
+        raise ValueError(
+            f"{DIRECTION_V2_2_PROTOCOL_VERSION} 固定权重已冻结为 "
+            f"{DIRECTION_V2_2_FIXED_WEIGHT_LABEL}={FIXED_ENERGY_REWARD_WEIGHT}，"
+            "禁止命令行覆盖或重新选择。"
+        )
+    if method == "fixed_weight":
+        trained_weight = float(env_cfg.rewards.energy.weight)
+        if abs(trained_weight - FIXED_ENERGY_REWARD_WEIGHT) > 1.0e-12:
+            raise ValueError(
+                f"v2.2 固定权重配置错误：期望 {FIXED_ENERGY_REWARD_WEIGHT}，"
+                f"实际 {trained_weight}。"
+            )
+        if args_cli.energy_reference_json is not None:
+            raise ValueError("v2.2 fixed_weight 不读取 B_ref，也不运行拉格朗日乘子。")
+    elif method == "eco":
+        if args_cli.energy_reference_json is None:
+            raise ValueError("v2.2 ECO 必须提供已冻结的 v2.1 E2 B_ref JSON。")
+        agent_cfg.algorithm.energy_budget_j = _load_energy_budget(
+            args_cli.energy_reference_json,
+            "stage1",
+            terrain,
+            protocol_version=DIRECTION_V2_2_SOURCE_PROTOCOL_VERSION,
+            boundary_audit_version=FOOT_BOUNDARY_AUDIT_VERSION,
+            source_experiment="E2 directional/task_only seed0 calibration",
+        )
+    elif args_cli.energy_reference_json is not None:
+        raise ValueError("v2.2 task_only 不接受 B_ref。")
+    if args_cli.energy_budget_j is not None:
+        raise ValueError("方向条件 v2.2 禁止命令行覆盖 ECO 预算。")
+    if args_cli.log_root is None:
+        raise ValueError("方向条件 v2.2 必须提供独立 --log_root。")
+    return method
+
+
 def _validate_run_role(run_name: str, max_iterations: int, resume: bool) -> None:
     lowered = run_name.lower()
     if "smoke" in lowered:
@@ -313,10 +404,24 @@ def main() -> None:
     agent_cfg.max_iterations = args_cli.max_iterations
     agent_cfg.run_name = run_name
     v1_multi_terrain_task = args_cli.task in MULTI_TERRAIN_TASK_IDS
+    direction_v2_2_task = (
+        args_cli.direction_protocol_version == "v2.2"
+        and args_cli.task in DIRECTION_CONDITIONED_V2_2_TASK_IDS
+    )
     direction_conditioned_task = args_cli.task in DIRECTION_CONDITIONED_TASK_IDS
-    multi_terrain_task = v1_multi_terrain_task or direction_conditioned_task
+    if args_cli.direction_protocol_version == "v2.2" and not direction_v2_2_task:
+        raise ValueError("--direction_protocol_version v2.2 只允许 v2.2 冻结任务。")
+    if (
+        args_cli.task in DIRECTION_CONDITIONED_V2_2_TASK_IDS
+        and args_cli.task not in DIRECTION_CONDITIONED_TASK_IDS
+        and not direction_v2_2_task
+    ):
+        raise ValueError("方向条件 fixed_weight 任务必须显式选择 v2.2 协议。")
+    multi_terrain_task = v1_multi_terrain_task or direction_conditioned_task or direction_v2_2_task
     if v1_multi_terrain_task:
         multi_method = _configure_multi_terrain_protocol(env_cfg, agent_cfg)
+    elif direction_v2_2_task:
+        multi_method = _configure_direction_conditioned_v2_2_protocol(env_cfg, agent_cfg)
     elif direction_conditioned_task:
         multi_method = _configure_direction_conditioned_protocol(env_cfg, agent_cfg)
     else:

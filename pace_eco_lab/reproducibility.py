@@ -48,9 +48,34 @@ def _plain(value: Any) -> Any:
 
 def _fingerprint_agent_config(agent_cfg: Any) -> dict[str, Any]:
     config = _plain(agent_cfg)
-    for transient_key in ("max_iterations", "run_name", "resume", "load_run", "load_checkpoint"):
+    for transient_key in (
+        "max_iterations",
+        "run_name",
+        "resume",
+        "load_run",
+        "load_checkpoint",
+        "save_interval",
+    ):
         config.pop(transient_key, None)
     return config
+
+
+def _resume_comparable_payload(payload: Any) -> Any:
+    """忽略不影响权重更新的检查点保存策略与对应校验实现源码。"""
+
+    normalized = _plain(payload)
+    if not isinstance(normalized, dict):
+        return normalized
+    agent = normalized.get("agent")
+    if isinstance(agent, dict):
+        agent.pop("save_interval", None)
+    source_hashes = normalized.get("implementation_source_hashes")
+    if isinstance(source_hashes, dict):
+        # agent_cfg 的其余有效配置仍会由上面的 agent 完整比较；
+        # reproducibility.py 只负责记录和校验，不参与策略权重更新。
+        source_hashes.pop("pace_eco_lab/configs/agent_cfg.py", None)
+        source_hashes.pop("pace_eco_lab/reproducibility.py", None)
+    return normalized
 
 
 def implementation_source_hashes() -> dict[str, str]:
@@ -223,12 +248,15 @@ def validate_resume_records(
     record = json.loads(reproducibility_path.read_text(encoding="utf-8"))
     if record.get("run_name") != run_name:
         raise ValueError(f"恢复运行名不一致：原运行 {record.get('run_name')}，当前 {run_name}。")
-    actual, _ = configuration_fingerprint(task, seed, env_cfg, agent_cfg)
+    actual, actual_payload = configuration_fingerprint(task, seed, env_cfg, agent_cfg)
     if saved.get("sha256") != actual:
-        raise ValueError(
-            "恢复配置指纹不一致；环境、算法超参数、预算、环境数或随机种子发生了变化，"
-            "必须从随机初始化开始。"
-        )
+        saved_payload = saved.get("payload")
+        if _resume_comparable_payload(saved_payload) != _resume_comparable_payload(actual_payload):
+            raise ValueError(
+                "恢复配置指纹不一致；环境、算法超参数、预算、环境数或随机种子发生了变化，"
+                "必须从随机初始化开始。"
+            )
+        print("[PACE] 恢复兼容校验通过：仅检查点保存间隔或对应校验实现发生变化。")
     verify_fixed_inputs()
     return actual
 

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pace_eco_lab.multi_terrain_protocol import MULTI_TERRAIN_TASK_IDS
 from pace_eco_lab.direction_conditioned_protocol import DIRECTION_CONDITIONED_TASK_IDS
+from pace_eco_lab.direction_conditioned_v2_2_protocol import DIRECTION_CONDITIONED_V2_2_TASK_IDS
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PACE_DATA_ROOT = Path(os.environ.get("PACE_ECO_DATA_ROOT", PROJECT_ROOT / "pace_data")).expanduser().resolve()
@@ -40,6 +41,11 @@ REGISTERED_TASKS = (
     ECO_ID,
     *MULTI_TERRAIN_TASK_IDS,
     *DIRECTION_CONDITIONED_TASK_IDS,
+    *(
+        task_id
+        for task_id in DIRECTION_CONDITIONED_V2_2_TASK_IDS
+        if task_id not in DIRECTION_CONDITIONED_TASK_IDS
+    ),
 )
 
 ACTOR_OBSERVATION_DIM = 48

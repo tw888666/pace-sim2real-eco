@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""方向条件 v2.1 的分批 calibration/holdout 正式评估。"""
+"""方向条件 v2.1 calibration 与 v2.1/v2.2 holdout 正式评估。"""
 
 from __future__ import annotations
 
@@ -39,14 +39,28 @@ from pace_eco_lab.direction_conditioned_protocol import (
     evaluation_global_id,
     terrain_seed,
 )
+from pace_eco_lab.direction_conditioned_v2_2_protocol import (
+    EVALUATION_PROTOCOL_VERSION,
+    FIXED_ENERGY_REWARD_WEIGHT,
+    METHOD_LABELS as V2_2_METHOD_LABELS,
+    METRIC_PROTOCOL_VERSION,
+    TASK_IDS as V2_2_TASK_IDS,
+    is_evaluation_target as is_v2_2_evaluation_target,
+)
 from pace_eco_lab.multi_terrain_protocol import (
     PROTOCOL_VERSION as LEGACY_PROTOCOL_VERSION,
     SUCCESS_SPEED_RANGE_M_S,
     TASK_IDS as LEGACY_TASK_IDS,
 )
+from pace_eco_lab.evaluation_states import (
+    MULTI_TERRAIN_CALIBRATION_STATE_SET,
+    MULTI_TERRAIN_HOLDOUT_STATE_SET,
+    evaluation_state_count,
+    evaluation_state_definition_sha256,
+)
 
 
-parser = argparse.ArgumentParser(description="PACE-ECO 方向条件 v2.1 冻结评估。")
+parser = argparse.ArgumentParser(description="PACE-ECO 方向条件 v2.1/v2.2 冻结评估。")
 parser.add_argument("--task", required=True)
 parser.add_argument("--checkpoint", required=True)
 parser.add_argument("--ppo_seed", required=True, type=int)
@@ -64,8 +78,18 @@ parser.add_argument(
 parser.add_argument("--output_root", required=True)
 parser.add_argument("--holdout_authorization", default=None)
 parser.add_argument("--warmup_s", type=float, default=5.0)
+parser.add_argument(
+    "--direction_protocol_version",
+    choices=("v2.1", "v2.2"),
+    default="v2.1",
+)
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
+ACTIVE_PROTOCOL_VERSION = (
+    EVALUATION_PROTOCOL_VERSION if args_cli.direction_protocol_version == "v2.2" else PROTOCOL_VERSION
+)
+ACTIVE_METRIC_VERSION = METRIC_PROTOCOL_VERSION if args_cli.direction_protocol_version == "v2.2" else PROTOCOL_VERSION
+ACTIVE_METHOD_LABELS = V2_2_METHOD_LABELS if args_cli.direction_protocol_version == "v2.2" else METHOD_LABELS
 
 
 def _sha256(path: Path) -> str:
@@ -77,6 +101,12 @@ def _sha256(path: Path) -> str:
 
 
 def _task_parts() -> tuple[str, str, str, bool]:
+    if args_cli.direction_protocol_version == "v2.2":
+        current_v2_2 = {task_id: key for key, task_id in V2_2_TASK_IDS.items()}
+        if args_cli.task not in current_v2_2:
+            parser.error("v2.2 只允许冻结主矩阵中的方向条件任务 ID。")
+        variant, method, terrain = current_v2_2[args_cli.task]
+        return variant, method, terrain, False
     current = {task_id: key for key, task_id in TASK_IDS.items()}
     if args_cli.task in current:
         variant, method, terrain = current[args_cli.task]
@@ -166,7 +196,7 @@ def _validate_authorization(legacy: bool) -> str | None:
     if not path.is_file() or not checkpoint.is_file():
         parser.error("holdout 授权或检查点不存在。")
     data = json.loads(path.read_text(encoding="utf-8"))
-    expected_protocol = LEGACY_PROTOCOL_VERSION if legacy else PROTOCOL_VERSION
+    expected_protocol = LEGACY_PROTOCOL_VERSION if legacy else ACTIVE_PROTOCOL_VERSION
     if (
         data.get("冻结状态") != "holdout已授权"
         or data.get("协议版本") != expected_protocol
@@ -182,8 +212,10 @@ def _validate_authorization(legacy: bool) -> str | None:
         and item.get("任务") == args_cli.task
         and int(item.get("PPO_seed", -1)) == args_cli.ppo_seed
     ]
-    if len(matches) != 1 or matches[0].get("检查点SHA256") != _sha256(checkpoint):
-        parser.error("当前模型不在冻结授权内，或检查点哈希不一致。")
+    if len(matches) != 1:
+        parser.error("当前模型不在冻结授权内，或任务/seed 记录不唯一。")
+    if matches[0].get("检查点SHA256") != _sha256(checkpoint):
+        parser.error("当前检查点哈希与冻结授权不一致。")
     if legacy:
         training_reference = Path(args_cli.training_energy_reference_json or "").expanduser().resolve()
         if (
@@ -191,13 +223,26 @@ def _validate_authorization(legacy: bool) -> str | None:
             or data.get("证据文件SHA256", {}).get("B_ref") != _sha256(training_reference)
         ):
             parser.error("E0 当前 v1 B_ref 与历史 holdout 授权证据不一致。")
-    else:
+    elif args_cli.direction_protocol_version == "v2.1":
         reference = Path(args_cli.energy_reference_json or "").expanduser().resolve()
         if (
             not reference.is_file()
             or data.get("证据文件SHA256", {}).get("B_ref") != _sha256(reference)
         ):
             parser.error("当前 v2 B_ref 与 v2 holdout 授权证据不一致。")
+    else:
+        reference = Path(args_cli.energy_reference_json or "").expanduser().resolve()
+        evidence = data.get("证据文件", {})
+        state_sha256 = evaluation_state_definition_sha256(MULTI_TERRAIN_HOLDOUT_STATE_SET)
+        if (
+            data.get("指标版本") != METRIC_PROTOCOL_VERSION
+            or not reference.is_file()
+            or not isinstance(evidence, dict)
+            or evidence.get("B_ref_B80_SHA256") != _sha256(reference)
+            or evidence.get("初始状态表") != MULTI_TERRAIN_HOLDOUT_STATE_SET
+            or evidence.get("初始状态表SHA256") != state_sha256
+        ):
+            parser.error("v2.2 授权中的指标、B80或初始状态表哈希与当前评估不一致。")
     return _sha256(path)
 
 
@@ -217,12 +262,17 @@ def _validate_protocol(variant: str, method: str, terrain: str, legacy: bool) ->
     if args_cli.terrain_seed != expected_seed:
         parser.error(f"v2 评估地形 seed 应为 {expected_seed}。")
     if args_cli.split == "calibration":
+        if args_cli.direction_protocol_version == "v2.2":
+            parser.error("v2.2 复用已冻结的 v2.1 B_ref，禁止重新 calibration。")
         if legacy or variant != "directional" or method != "task_only":
             parser.error("calibration 只允许 v2 E2 任务型模型。")
         if args_cli.ppo_seed not in PPO_SEEDS[f"{args_cli.stage}_budget"]:
             parser.error("calibration PPO seed 不属于 v2 冻结集合。")
+    elif args_cli.direction_protocol_version == "v2.2":
+        if args_cli.stage != "stage1" or not is_v2_2_evaluation_target(method, terrain, args_cli.ppo_seed):
+            parser.error("holdout 模型不属于 v2.2 冻结45模型评估矩阵。")
     elif args_cli.ppo_seed not in PPO_SEEDS[f"{args_cli.stage}_formal"]:
-        parser.error("holdout PPO seed 不属于 v2 冻结集合。")
+        parser.error("holdout PPO seed 不属于 v2.1 冻结集合。")
 
 
 variant, method, terrain, legacy = _task_parts()
@@ -237,6 +287,9 @@ legacy_training_budget, legacy_reference_sha256 = _load_legacy_training_budget(m
 authorization_sha256 = _validate_authorization(legacy)
 output_root = Path(args_cli.output_root).expanduser().resolve()
 batch_terrain_seed = evaluation_batch_seed(args_cli.terrain_seed, args_cli.batch_index)
+checkpoint_source_protocol = (
+    PROTOCOL_VERSION if "gpt_direction_v2_1_" in checkpoint.parent.name else ACTIVE_PROTOCOL_VERSION
+)
 
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
@@ -253,12 +306,6 @@ import pace_eco_lab  # noqa: F401
 from pace_eco_lab.configs.multi_terrain_env_cfg import configure_terrain20s_evaluation
 from pace_eco_lab.directional_metrics import directional_displacement_metrics, directional_success
 from pace_eco_lab.envs.terrain20s_env import metadata_labels
-from pace_eco_lab.evaluation_states import (
-    MULTI_TERRAIN_CALIBRATION_STATE_SET,
-    MULTI_TERRAIN_HOLDOUT_STATE_SET,
-    evaluation_state_count,
-    evaluation_state_definition_sha256,
-)
 from pace_eco_lab.reproducibility import validate_evaluation_checkpoint, verify_dependency_versions
 from pace_eco_lab.terrains import curriculum_difficulty_table
 from scripts.pace_eco.eval_metrics import FOOT_BODY_NAMES, CoordinationAccumulator
@@ -296,8 +343,9 @@ def _staging_dir() -> Path:
 
 def _metadata() -> dict[str, object]:
     return {
-        "协议版本": PROTOCOL_VERSION,
-        "来源协议版本": LEGACY_PROTOCOL_VERSION if legacy else PROTOCOL_VERSION,
+        "协议版本": ACTIVE_PROTOCOL_VERSION,
+        "评估指标版本": ACTIVE_METRIC_VERSION,
+        "来源协议版本": LEGACY_PROTOCOL_VERSION if legacy else checkpoint_source_protocol,
         "边界审计版本": FOOT_BOUNDARY_AUDIT_VERSION,
         "阶段": args_cli.stage,
         "数据拆分": args_cli.split,
@@ -356,14 +404,26 @@ def _load_staged_rows() -> list[dict[str, object]]:
         combined.extend(rows)
     combined.sort(key=lambda row: int(row["回合"]))
     if len(combined) != EVAL_EPISODES or {int(row["回合"]) for row in combined} != set(range(EVAL_EPISODES)):
-        raise RuntimeError("四个批次没有形成完整且不重复的 1000 回合。")
+        raise RuntimeError("四个批次没有形成完整且不重复的 200 回合。")
     return combined
 
 
 def _group_summary(items: list[dict[str, object]], budget_j: float | None) -> dict[str, object]:
     energies = [float(row["回合能耗_J"]) for row in items]
     direction_ok = [row for row in items if bool(row["方向穿越成功"])]
-    return {
+    success_energies = [float(row["回合能耗_J"]) for row in direction_ok]
+    table2_fields = (
+        "稳态平均机身前向速度_m_s",
+        "世界速度跟踪RMSE_m_s",
+        "机身横向速度RMS_m_s",
+        "机身垂向速度RMS_m_s",
+        "机身横滚俯仰角速度RMS_rad_s",
+        "动作变化RMS_归一化动作",
+        "三步窗触地足速均值_m_s",
+        "支撑相占比极差",
+        "落足频率变异系数",
+    )
+    summary = {
         "回合数": len(items),
         "生存成功率": sum(bool(row["生存成功"]) for row in items) / len(items),
         "方向穿越成功率": len(direction_ok) / len(items),
@@ -389,7 +449,21 @@ def _group_summary(items: list[dict[str, object]], budget_j: float | None) -> di
         "方向成功回合平均单位方向进度能耗_J_m": _mean(
             [float(row["单位方向进度能耗_J_m"]) for row in direction_ok]
         ),
+        "成功条件B80合格率": (
+            sum(energy <= budget_j for energy in success_energies) / len(success_energies)
+            if budget_j is not None and success_energies else None
+        ),
+        "归一化超预算幅度": (
+            _mean([max(energy / budget_j - 1.0, 0.0) for energy in success_energies])
+            if budget_j is not None and success_energies else None
+        ),
     }
+    summary["表2方向成功回合数"] = len(direction_ok)
+    for field in table2_fields:
+        summary[f"方向成功回合平均{field}"] = _mean(
+            [float(row[field]) for row in direction_ok if row.get(field) is not None]
+        )
+    return summary
 
 
 def _write_outputs(rows: list[dict[str, object]], record: dict[str, object], budget_j: float | None) -> Path:
@@ -408,7 +482,7 @@ def _write_outputs(rows: list[dict[str, object]], record: dict[str, object], bud
         writer.writeheader()
         writer.writerows(rows)
     (result_dir / "gpt-方向条件逐回合结果.json").write_text(
-        json.dumps({"协议版本": PROTOCOL_VERSION, "逐回合": rows}, ensure_ascii=False, indent=2) + "\n",
+        json.dumps({"协议版本": ACTIVE_PROTOCOL_VERSION, "逐回合": rows}, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     grouped: dict[str, list[dict[str, object]]] = defaultdict(list)
@@ -418,7 +492,7 @@ def _write_outputs(rows: list[dict[str, object]], record: dict[str, object], bud
     summary = {
         **_metadata(),
         "实验变体名称": "E0冻结v1交叉评估" if legacy else VARIANT_LABELS[variant],
-        "方法名称": METHOD_LABELS[method],
+        "方法名称": ACTIVE_METHOD_LABELS[method],
         "地形名称": TERRAIN_LABELS[terrain],
         "期望世界方向": list(DESIRED_DIRECTION_W),
         "目标速度_m_s": TARGET_SPEED_M_S_V2,
@@ -436,7 +510,7 @@ def _write_outputs(rows: list[dict[str, object]], record: dict[str, object], bud
             "完整20秒、无非法终止、相对回合起点沿指定方向净进度>=16m，且全程最大横轨偏离<=3m"
         ),
         "历史速度成功定义": "完整20秒、无非法终止且5秒预热后机身前向平均速度位于[0.8,1.2]m/s",
-        "航向指标解释": "v2.1 不约束机身朝向；航向误差仅为诊断，不属于方向穿越成功定义。",
+        "航向指标解释": "v2.1/v2.2 不约束机身朝向；航向误差仅为诊断，不属于方向穿越成功定义。",
         "E0预算解释": (
             "E0 的 B80联合合格仅为在 v2 B80 下的交叉协议诊断；E0 训练仍使用 E0训练预算B80_J。"
             if legacy
@@ -475,12 +549,20 @@ def main() -> None:
         checkpoint.parent,
         task=args_cli.task,
         energy_budget_j=validation_budget if method == "eco" else None,
-        require_current_implementation=not legacy,
+        require_current_implementation=False,
     )
     if int(record.get("seed", -1)) != args_cli.ppo_seed:
         raise ValueError("检查点 PPO seed 与评估参数不一致。")
-    if not bool(record.get("git_worktree_clean")):
-        raise ValueError("正式评估拒绝训练时工作树不干净的检查点。")
+    if method == "fixed_weight":
+        environment_path = checkpoint.parent / "gpt_环境配置.json"
+        if not environment_path.is_file():
+            raise FileNotFoundError("v2.2 固定权重检查点缺少 gpt_环境配置.json。")
+        environment = json.loads(environment_path.read_text(encoding="utf-8"))
+        trained_weight = float(environment.get("rewards", {}).get("energy", {}).get("weight", 0.0))
+        if abs(trained_weight - FIXED_ENERGY_REWARD_WEIGHT) > 1.0e-12:
+            raise ValueError("v2.2 固定权重检查点没有使用冻结的 W100 系数。")
+    if args_cli.direction_protocol_version == "v2.1" and not bool(record.get("git_worktree_clean")):
+        raise ValueError("v2.1 正式评估拒绝训练时工作树不干净的检查点。")
     state_set = (
         MULTI_TERRAIN_CALIBRATION_STATE_SET
         if args_cli.split == "calibration"
@@ -635,8 +717,9 @@ def main() -> None:
                 global_episode_id = evaluation_global_id(args_cli.batch_index, env_id)
                 local_instance_id = level * EVAL_TERRAIN_COLS + terrain_type
                 row: dict[str, object] = {
-                    "协议版本": PROTOCOL_VERSION,
-                    "来源协议版本": LEGACY_PROTOCOL_VERSION if legacy else PROTOCOL_VERSION,
+                    "协议版本": ACTIVE_PROTOCOL_VERSION,
+                    "评估指标版本": ACTIVE_METRIC_VERSION,
+                    "来源协议版本": LEGACY_PROTOCOL_VERSION if legacy else checkpoint_source_protocol,
                     "边界审计版本": FOOT_BOUNDARY_AUDIT_VERSION,
                     "阶段": args_cli.stage,
                     "数据拆分": args_cli.split,
@@ -717,6 +800,9 @@ def main() -> None:
     if len(rows) != EVAL_NUM_ENVS:
         wrapped.close()
         raise RuntimeError(f"本批评估未收齐：{len(rows)}/{EVAL_NUM_ENVS}")
+    if args_cli.stage == "stage1" and any(row["地形类别"] != terrain for row in rows):
+        wrapped.close()
+        raise RuntimeError("评估结果包含模型对应类别以外的地形，拒绝写出正式批次。")
     if any(bool(row["接触足越过真实地形边缘"]) for row in rows):
         wrapped.close()
         raise RuntimeError("检测到接触足越过真实地形边缘，拒绝写出 v2 正式结果。")

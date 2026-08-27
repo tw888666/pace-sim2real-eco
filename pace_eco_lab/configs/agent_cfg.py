@@ -83,7 +83,7 @@ class PaceTaskOnlyPPORunnerCfg(RslRlOnPolicyRunnerCfg):
     num_steps_per_env = 24
     # 统一执行 3000 次更新；RSL-RL 从 0 编号，最终检查点为 model_2999.pt。
     max_iterations = 3_000
-    save_interval = 500
+    save_interval = 100
     experiment_name = "pace_task_only_flat_anymal_d"
     empirical_normalization = True
     obs_groups = {"actor": ["policy"], "critic": ["critic"]}

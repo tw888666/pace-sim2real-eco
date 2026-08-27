@@ -1,0 +1,79 @@
+{
+  "冻结状态": "v2.2实验协议已冻结",
+  "协议版本": "gpt-direction-conditioned-v2.2",
+  "来源协议": "gpt-direction-conditioned-v2.1",
+  "边界审计版本": "gpt-四足真实地形边界-v4",
+  "主实验变体": "E2 directional",
+  "方法": [
+    "task_only",
+    "fixed_weight",
+    "eco"
+  ],
+  "固定权重": {
+    "标签": "W100",
+    "lambda_fixed": 0.00016,
+    "能耗奖励系数": -0.00016,
+    "来源": "v1/v1.4已冻结PACE论文ANYmal固定权重",
+    "重新搜索": false
+  },
+  "ECO预算": {
+    "来源": "results/supplementary/direction_conditioned_v2_1/stage1/gpt-阶段一v2_B_ref冻结文件.json",
+    "规则": "沿用E2 directional/task_only seed0标定的逐地形B80",
+    "重新标定": false
+  },
+  "目标seed": {
+    "flat": {
+      "task_only": [1, 2, 3, 4, 5],
+      "fixed_weight": [1, 2, 3],
+      "eco": [1, 2, 3, 4, 5]
+    },
+    "rough": {
+      "task_only": [1, 2, 3, 4, 5],
+      "fixed_weight": [1, 2, 3],
+      "eco": [1, 2, 3, 4, 5]
+    },
+    "stairs": {
+      "task_only": [1, 2, 3],
+      "fixed_weight": [1, 2, 3],
+      "eco": [1, 2, 3]
+    },
+    "boxes": {
+      "task_only": [1, 2, 3],
+      "fixed_weight": [1, 2, 3],
+      "eco": [1, 2, 3]
+    },
+    "slope": {
+      "task_only": [1, 2, 3],
+      "fixed_weight": [1, 2, 3],
+      "eco": [1, 2, 3]
+    }
+  },
+  "数量": {
+    "训练与归档矩阵": 53,
+    "独立论文评估矩阵": 45,
+    "复用v2.1": 22,
+    "v2.2新增训练": 31,
+    "评估复用v2.1": 14,
+    "评估使用v2.2新增": 31
+  },
+  "独立评估清单": "gpt-方向条件v2.2_45模型评估冻结配置.json",
+  "seed4_5处理": "保留模型和训练记录，不评估、不汇总、不进入论文主表",
+  "冒烟验证": {
+    "任务": "directional/flat/fixed_weight",
+    "PPO_seed": 902,
+    "环境数": 16,
+    "更新数": 2,
+    "计入正式矩阵": false
+  },
+  "迁移规则": {
+    "v2.1_E2复用": "按预注册方法、地形、PPO seed和唯一非空model_2999.pt复用，不复制或改写checkpoint",
+    "v2.1_E1处理": "保留为方向观测架构消融证据，不进入v2.2三方法主比较",
+    "v2.1未完成任务": "归档，不再自动补训",
+    "输出隔离": "所有新增训练写入direction_conditioned_v2_2目录"
+  },
+  "输出根": {
+    "训练": "logs/supplementary/direction_conditioned_v2_2",
+    "评估": "results/supplementary/direction_conditioned_v2_2",
+    "v2.1保留": "logs/supplementary/direction_conditioned_v2_1"
+  }
+}

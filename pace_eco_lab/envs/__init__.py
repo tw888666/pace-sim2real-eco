@@ -9,6 +9,7 @@ import gymnasium as gym
 
 from pace_eco_lab.constants import ECO_ID, FIXED_WEIGHT_ID, TASK_ONLY_ID
 from pace_eco_lab.direction_conditioned_protocol import TASK_IDS as DIRECTION_TASK_IDS
+from pace_eco_lab.direction_conditioned_v2_2_protocol import TASK_IDS as DIRECTION_V2_2_TASK_IDS
 from pace_eco_lab.multi_terrain_protocol import TASK_IDS
 
 
@@ -93,6 +94,25 @@ def register_tasks() -> None:
             ),
             (
                 "pace_eco_lab.configs.direction_conditioned_agent_cfg:"
+                f"Pace{variant_title}{terrain_title}Terrain20s{method_title}PPORunnerCfg"
+            ),
+            "pace_eco_lab.envs.terrain20s_env:PaceTerrain20sRLEnv",
+        )
+    for (variant, method, terrain), task_id in DIRECTION_V2_2_TASK_IDS.items():
+        if method != "fixed_weight":
+            # v2.2 的 task-only/ECO 有意复用上面已注册的 v2.1 E2 任务。
+            continue
+        variant_title = direction_variant_titles[variant]
+        terrain_title = terrain_titles[terrain]
+        method_title = method_titles[method]
+        _register(
+            task_id,
+            (
+                "pace_eco_lab.configs.direction_conditioned_v2_2_env_cfg:"
+                f"Pace{variant_title}{terrain_title}Terrain20s{method_title}EnvCfg"
+            ),
+            (
+                "pace_eco_lab.configs.direction_conditioned_v2_2_agent_cfg:"
                 f"Pace{variant_title}{terrain_title}Terrain20s{method_title}PPORunnerCfg"
             ),
             "pace_eco_lab.envs.terrain20s_env:PaceTerrain20sRLEnv",
