@@ -8,9 +8,13 @@ pace_v23_require_tmux
 budget_log="${1:-}"
 [[ -f "${budget_log}" ]] || pace_v23_fail "必须提供正在执行的阶段2启动日志。"
 
-while ! grep -Eq '\[PACE-v2\.3\] 训练产物校验通过：.*/model_2999\.pt' "${budget_log}"; do
+while true; do
     if grep -Eqi 'Traceback|CUDA out of memory|(^|[^[:alnum:]_])OOM([^[:alnum:]_]|$)|(^|[^[:alnum:]_])NaN([^[:alnum:]_]|$)|Segmentation fault|Aborted|阶段2会话退出码=[1-9]' "${budget_log}"; then
         pace_v23_fail "阶段2日志出现失败标记，自动链条停止：${budget_log}"
+    fi
+    checkpoint_count="$(find "${PACE_V23_LOG_ROOT}/rsl_rl/budget_train" -type f -name model_2999.pt | wc -l)"
+    if grep -Eq 'Learning iteration 2999/3000' "${budget_log}" && [[ "${checkpoint_count}" -eq 1 ]] && ! pgrep -f 'train\.py.*--protocol_role budget_train' >/dev/null; then
+        break
     fi
     sleep 60
 done
