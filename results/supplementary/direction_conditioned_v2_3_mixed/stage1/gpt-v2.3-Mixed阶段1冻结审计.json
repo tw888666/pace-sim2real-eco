@@ -1,0 +1,53 @@
+{
+  "冻结状态": "阶段1已完成并冻结",
+  "协议版本": "gpt-direction-conditioned-v2.3-mixed-v1",
+  "创建时间": "2026-08-27T10:50:00+08:00",
+  "实现Git提交": "8f96b90acf89c08a92a1ac12f7fcda8c15bd7fdf",
+  "配置与实现SHA256": {
+    "gpt-方向条件v2.3_Mixed冻结配置.json": "be7a72c8850dfccdb8a12479157630aa8556c4fc671f860077b3862164893d69",
+    "pace_eco_lab/direction_conditioned_v2_3_mixed_protocol.py": "513dc8fa12c9376e0468fa30af9b8dd8edd4cf3ae3991e5c82ae91ce5566e3df",
+    "pace_eco_lab/configs/direction_conditioned_v2_3_mixed_env_cfg.py": "2b73f5152fb5279aa819328b8f1a3490ab4c53648f8912343f1a25f061fbfbd6",
+    "pace_eco_lab/configs/direction_conditioned_v2_3_mixed_agent_cfg.py": "da1628af10b6384569f15ca9d9fee429029cc65d93f0b665b168e04fa84bcd76",
+    "scripts/pace_eco/train.py": "717ab8b22c66292d01bbd75749e4b1c78db6700a22eef72aff8923796ee46692",
+    "scripts/pace_eco/direction_conditioned_eval.py": "a07f5d38797d0d6424d4656238868803f079ba1fd513b6b6520f535c373e6cd6"
+  },
+  "manifest": {
+    "calibration_manifest_SHA256": "69793161547c051fa08d4bf66d1705e2a51e3ec4f2a3e9828ec130c890bc120b",
+    "holdout_manifest_SHA256": "aa144e56c0590dc63f23fa99cff0e6d22f6e6f7422b4b4dc645bccffbd1d38ee"
+  },
+  "回归测试": {
+    "结果": "39 passed",
+    "范围": "v2.1协议、v2.2协议、v2.3 Mixed协议、manifest、预算宏平均和potential符号"
+  },
+  "冒烟": {
+    "GPU": 3,
+    "方法": "fixed_weight",
+    "固定权重": "W100=-1.6e-4",
+    "PPO_seed": 903,
+    "terrain_seed": 970903,
+    "环境数": 4096,
+    "更新": "0--1",
+    "地形列映射": [
+      "flat:level",
+      "flat:level",
+      "rough:level",
+      "rough:level",
+      "stairs:up",
+      "stairs:down",
+      "boxes:level",
+      "boxes:level",
+      "slope:up",
+      "slope:down"
+    ],
+    "checkpoint": "/home/xy.chen/tw/PACE-ECO-mixed-v2.3/logs/supplementary/direction_conditioned_v2_3_mixed/rsl_rl/smoke_train/pace_direction_conditioned_v2_3_mixed_fixed_weight_terrain20s_wide_anymal_d/2026-08-27_10-48-34_gpt_direction_v2_3_mixed_smoke_train_fixed_weight_ppo_seed903_terrain_seed970903/model_1.pt",
+    "checkpoint_SHA256": "c936271faa183313b6293aeefe9a3213b5759f096562b0e868aedbe95f1901eb",
+    "复现记录_SHA256": "7b511680aeb4e36ab41591c9f96c566db2e54116f2c1c54bdeede29940879d8f",
+    "环境配置_SHA256": "b281d8c1e6ec60a5a737586908099175e89e017c7ce50fd3bace11ddff5537e5",
+    "算法配置_SHA256": "9ddbdc14867c6629d82db6f145ae7fbebd3ab8f046f610674ae77ecd1e368a17",
+    "配置指纹_SHA256": "71e360c5958a53b872a8a0a29e42599209ce513ca8f729d95b9ca57780d8e7c5",
+    "启动日志_SHA256": "2c831ddd3de6ac1e39971eaef7dbcc1f8569c028c0759ce9728373e97a2377c8",
+    "OOM_NaN_异常退出": false,
+    "最终checkpoint唯一": true,
+    "Git工作树在训练时干净": true
+  }
+}
