@@ -23,9 +23,15 @@ mapfile -t budget_checkpoints < <(find "${PACE_V23_LOG_ROOT}/rsl_rl/budget_train
 [[ "${#budget_checkpoints[@]}" -eq 1 ]] || pace_v23_fail "阶段2应有唯一model_2999.pt，实际${#budget_checkpoints[@]}。"
 budget_checkpoint="${budget_checkpoints[0]}"
 
-bash "${PACE_V23_ROOT}/scripts/pace_eco/gpt-运行方向条件v2.3_Mixed评估.sh" 3 calibration task_only 0 "${budget_checkpoint}" - -
-
-PYTHONPATH="${PACE_V23_ROOT}" "${PACE_V23_CONDA}" run -n "${PACE_V23_ENV}" --no-capture-output python "${PACE_V23_ROOT}/scripts/pace_eco/freeze_direction_conditioned_v2_3_mixed_budget.py" --calibration_root "${PACE_V23_RESULT_ROOT}/stage3/calibration" --manifest "${PACE_V23_CALIBRATION_MANIFEST}" --checkpoint "${budget_checkpoint}" --output "${PACE_V23_BUDGET}"
+if [[ ! -f "${PACE_V23_BUDGET}" ]]; then
+    batch_count="$(find "${PACE_V23_RESULT_ROOT}/stage3/calibration" -type f -name 'gpt-v2.3-Mixed-calibration-batch-*.csv' 2>/dev/null | wc -l)"
+    if [[ "${batch_count}" -eq 0 ]]; then
+        bash "${PACE_V23_ROOT}/scripts/pace_eco/gpt-运行方向条件v2.3_Mixed评估.sh" 3 calibration task_only 0 "${budget_checkpoint}" - -
+    elif [[ "${batch_count}" -ne 4 ]]; then
+        pace_v23_fail "阶段3 calibration 批次应为0或4，实际${batch_count}，拒绝混合续跑。"
+    fi
+    PYTHONPATH="${PACE_V23_ROOT}" "${PACE_V23_CONDA}" run -n "${PACE_V23_ENV}" --no-capture-output python "${PACE_V23_ROOT}/scripts/pace_eco/freeze_direction_conditioned_v2_3_mixed_budget.py" --calibration_root "${PACE_V23_RESULT_ROOT}/stage3/calibration" --manifest "${PACE_V23_CALIBRATION_MANIFEST}" --checkpoint "${budget_checkpoint}" --output "${PACE_V23_BUDGET}"
+fi
 [[ -f "${PACE_V23_BUDGET}" ]] || pace_v23_fail "阶段3没有生成预算冻结文件。"
 
 while true; do

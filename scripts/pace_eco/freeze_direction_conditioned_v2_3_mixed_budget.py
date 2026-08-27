@@ -79,6 +79,7 @@ def main() -> None:
     if len(rows) != EVAL_EPISODES or len({row["episode_id"] for row in rows}) != EVAL_EPISODES:
         raise ValueError("calibration 回合不完整或重复。")
     manifest_rows = {item["episode_id"]: item for item in manifest_data["逐回合"]}
+    component_identity_errors: list[tuple[float, float]] = []
     for row in rows:
         expected = manifest_rows.get(row["episode_id"])
         if expected is None:
@@ -100,7 +101,12 @@ def main() -> None:
             raise ValueError("calibration 协议、方法或 PPO seed 错误。")
         components = sum(float(row[key]) for key in ("电气能耗_J", "机械能耗_J", "势能能耗_J"))
         energy = float(row["回合能耗_J"])
-        if not math.isfinite(energy) or abs(components - energy) > max(1.0e-3, abs(energy) * 1.0e-6):
+        absolute_error = abs(components - energy)
+        relative_error = absolute_error / max(abs(energy), 1.0)
+        component_identity_errors.append((absolute_error, relative_error))
+        # 两条量由 GPU float32 分别累加，允许数个 ulp（最小精度单位）的舍入差；
+        # 该容差只审计恒等式，不改写任一能耗数值或预算公式。
+        if not math.isfinite(energy) or relative_error > 5.0e-6:
             raise ValueError(f"能耗分量恒等式失败：{row['episode_id']}")
     grouped: dict[str, list[dict[str, str]]] = defaultdict(list)
     for row in rows:
@@ -157,6 +163,12 @@ def main() -> None:
             "stairs_up_minus_down_J": subtask_stats["stairs-up"]["方向成功回合平均potential能耗_J"] - subtask_stats["stairs-down"]["方向成功回合平均potential能耗_J"],
             "slope_up_minus_down_J": subtask_stats["slope-up"]["方向成功回合平均potential能耗_J"] - subtask_stats["slope-down"]["方向成功回合平均potential能耗_J"],
             "预期": "up potential为负，down potential为正；仅审计，不修改正式定义。",
+        },
+        "能耗分量恒等式审计": {
+            "定义": "回合总能耗约等于电气+机械+potential；原始GPU float32累加值不改写。",
+            "相对误差容差": 5.0e-6,
+            "最大绝对误差_J": max(value[0] for value in component_identity_errors),
+            "最大相对误差": max(value[1] for value in component_identity_errors),
         },
         "calibration_manifest_SHA256": _sha256(manifest),
         "四批CSV": evidence,
