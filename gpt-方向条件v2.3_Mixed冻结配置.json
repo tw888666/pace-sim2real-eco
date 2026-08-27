@@ -1,0 +1,45 @@
+{
+  "冻结状态": "阶段1协议配置已冻结",
+  "协议版本": "gpt-direction-conditioned-v2.3-mixed-v1",
+  "任务变体": "E2 directional",
+  "地形": "mixed",
+  "方法": ["task_only", "fixed_weight", "eco"],
+  "预算参考PPO_seed": 0,
+  "正式PPO_seed": [1, 2, 3],
+  "冒烟PPO_seed": 903,
+  "并行环境数": 4096,
+  "正式训练更新数": 3000,
+  "冒烟更新数": 2,
+  "初始化": "全部随机初始化，禁止单地形checkpoint",
+  "固定权重": {"标签": "W100", "能耗奖励系数": -0.00016},
+  "每50环境分布": {
+    "flat": 10,
+    "rough": 10,
+    "boxes": 10,
+    "stairs-up": 5,
+    "stairs-down": 5,
+    "slope-up": 5,
+    "slope-down": 5
+  },
+  "方向穿越成功": {
+    "完整生存_s": 20,
+    "允许非法终止": false,
+    "最低方向净进展_m": 16,
+    "最大横轨偏离_m": 3
+  },
+  "能耗定义": "electrical + mechanical + potential",
+  "potential功率定义": "-g * sum_i(m_i * v_z_i)",
+  "地形seed基准": {
+    "smoke_train": 970000,
+    "budget_train": 710000,
+    "formal_train": 730000,
+    "calibration": 740000,
+    "holdout": 750000
+  },
+  "输出目录": {
+    "日志": "logs/supplementary/direction_conditioned_v2_3_mixed/",
+    "结果": "results/supplementary/direction_conditioned_v2_3_mixed/"
+  },
+  "训练任务数": 10,
+  "正式模型数": 9
+}

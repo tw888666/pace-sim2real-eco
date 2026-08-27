@@ -10,6 +10,9 @@ import gymnasium as gym
 from pace_eco_lab.constants import ECO_ID, FIXED_WEIGHT_ID, TASK_ONLY_ID
 from pace_eco_lab.direction_conditioned_protocol import TASK_IDS as DIRECTION_TASK_IDS
 from pace_eco_lab.direction_conditioned_v2_2_protocol import TASK_IDS as DIRECTION_V2_2_TASK_IDS
+from pace_eco_lab.direction_conditioned_v2_3_mixed_protocol import (
+    TASK_IDS as DIRECTION_V2_3_MIXED_TASK_IDS,
+)
 from pace_eco_lab.multi_terrain_protocol import TASK_IDS
 
 
@@ -114,6 +117,20 @@ def register_tasks() -> None:
             (
                 "pace_eco_lab.configs.direction_conditioned_v2_2_agent_cfg:"
                 f"Pace{variant_title}{terrain_title}Terrain20s{method_title}PPORunnerCfg"
+            ),
+            "pace_eco_lab.envs.terrain20s_env:PaceTerrain20sRLEnv",
+        )
+    for method, task_id in DIRECTION_V2_3_MIXED_TASK_IDS.items():
+        method_title = method_titles[method]
+        _register(
+            task_id,
+            (
+                "pace_eco_lab.configs.direction_conditioned_v2_3_mixed_env_cfg:"
+                f"PaceDirectionConditionedV23MixedTerrain20s{method_title}EnvCfg"
+            ),
+            (
+                "pace_eco_lab.configs.direction_conditioned_v2_3_mixed_agent_cfg:"
+                f"PaceDirectionConditionedV23MixedTerrain20s{method_title}PPORunnerCfg"
             ),
             "pace_eco_lab.envs.terrain20s_env:PaceTerrain20sRLEnv",
         )

@@ -47,6 +47,16 @@ from pace_eco_lab.direction_conditioned_v2_2_protocol import (
     TASK_IDS as V2_2_TASK_IDS,
     is_evaluation_target as is_v2_2_evaluation_target,
 )
+from pace_eco_lab.direction_conditioned_v2_3_mixed_protocol import (
+    FORMAL_SEEDS as V2_3_FORMAL_SEEDS,
+    MANIFEST_VERSION as V2_3_MANIFEST_VERSION,
+    METHOD_LABELS as V2_3_METHOD_LABELS,
+    PROTOCOL_VERSION as V2_3_PROTOCOL_VERSION,
+    TASK_IDS as V2_3_TASK_IDS,
+    evaluation_batch_seed as v2_3_evaluation_batch_seed,
+    subtask_name as v2_3_subtask_name,
+    terrain_seed as v2_3_terrain_seed,
+)
 from pace_eco_lab.multi_terrain_protocol import (
     PROTOCOL_VERSION as LEGACY_PROTOCOL_VERSION,
     SUCCESS_SPEED_RANGE_M_S,
@@ -67,7 +77,7 @@ parser.add_argument("--ppo_seed", required=True, type=int)
 parser.add_argument("--terrain_seed", required=True, type=int)
 parser.add_argument("--batch_index", required=True, type=int)
 parser.add_argument("--batch_group", required=True)
-parser.add_argument("--stage", required=True, choices=("stage1", "stage2"))
+parser.add_argument("--stage", required=True, choices=("stage1", "stage2", "stage3", "stage6"))
 parser.add_argument("--split", required=True, choices=("calibration", "holdout"))
 parser.add_argument("--energy_reference_json", default=None)
 parser.add_argument(
@@ -77,19 +87,30 @@ parser.add_argument(
 )
 parser.add_argument("--output_root", required=True)
 parser.add_argument("--holdout_authorization", default=None)
+parser.add_argument("--manifest", default=None, help="v2.3 必需的冻结逐回合 manifest。")
 parser.add_argument("--warmup_s", type=float, default=5.0)
 parser.add_argument(
     "--direction_protocol_version",
-    choices=("v2.1", "v2.2"),
+    choices=("v2.1", "v2.2", "v2.3"),
     default="v2.1",
 )
 AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
-ACTIVE_PROTOCOL_VERSION = (
-    EVALUATION_PROTOCOL_VERSION if args_cli.direction_protocol_version == "v2.2" else PROTOCOL_VERSION
-)
-ACTIVE_METRIC_VERSION = METRIC_PROTOCOL_VERSION if args_cli.direction_protocol_version == "v2.2" else PROTOCOL_VERSION
-ACTIVE_METHOD_LABELS = V2_2_METHOD_LABELS if args_cli.direction_protocol_version == "v2.2" else METHOD_LABELS
+ACTIVE_PROTOCOL_VERSION = {
+    "v2.1": PROTOCOL_VERSION,
+    "v2.2": EVALUATION_PROTOCOL_VERSION,
+    "v2.3": V2_3_PROTOCOL_VERSION,
+}[args_cli.direction_protocol_version]
+ACTIVE_METRIC_VERSION = {
+    "v2.1": PROTOCOL_VERSION,
+    "v2.2": METRIC_PROTOCOL_VERSION,
+    "v2.3": V2_3_PROTOCOL_VERSION,
+}[args_cli.direction_protocol_version]
+ACTIVE_METHOD_LABELS = {
+    "v2.1": METHOD_LABELS,
+    "v2.2": V2_2_METHOD_LABELS,
+    "v2.3": V2_3_METHOD_LABELS,
+}[args_cli.direction_protocol_version]
 
 
 def _sha256(path: Path) -> str:
@@ -101,6 +122,11 @@ def _sha256(path: Path) -> str:
 
 
 def _task_parts() -> tuple[str, str, str, bool]:
+    if args_cli.direction_protocol_version == "v2.3":
+        inverse = {task_id: method for method, task_id in V2_3_TASK_IDS.items()}
+        if args_cli.task not in inverse:
+            parser.error("v2.3 只允许 Mixed 三方法冻结任务 ID。")
+        return "directional", inverse[args_cli.task], "mixed", False
     if args_cli.direction_protocol_version == "v2.2":
         current_v2_2 = {task_id: key for key, task_id in V2_2_TASK_IDS.items()}
         if args_cli.task not in current_v2_2:
@@ -138,6 +164,27 @@ def _load_v2_reference(
     terrain: str,
 ) -> tuple[dict[str, float], float | None, str | None]:
     calibration = args_cli.split == "calibration"
+    if args_cli.direction_protocol_version == "v2.3":
+        if calibration:
+            if method != "task_only" or args_cli.energy_reference_json is not None:
+                parser.error("v2.3 calibration 只允许 task_only 且禁止预读 B_ref。")
+            return {}, None, None
+        if args_cli.energy_reference_json is None:
+            parser.error("v2.3 holdout 必须提供冻结的 Mixed B80 文件。")
+        path = Path(args_cli.energy_reference_json).expanduser().resolve()
+        if not path.is_file():
+            parser.error(f"v2.3 Mixed B80 不存在：{path}")
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if data.get("冻结状态") != "已冻结" or data.get("协议版本") != V2_3_PROTOCOL_VERSION:
+            parser.error("v2.3 Mixed B80 状态或协议不匹配。")
+        primary = float(data.get("B_ref_mixed_J", 0.0))
+        source = data.get("五类主地形参考能耗_J", {})
+        if primary <= 0.0 or not isinstance(source, dict):
+            parser.error("v2.3 Mixed 冻结文件缺少正 B_ref 或五类地形参考。")
+        references = {key: float(source.get(key, 0.0)) for key in ("flat", "rough", "stairs", "boxes", "slope")}
+        if any(value <= 0.0 for value in references.values()):
+            parser.error("v2.3 Mixed 冻结文件的五类地形参考不完整。")
+        return references, primary, _sha256(path)
     if calibration:
         if variant != "directional" or method != "task_only":
             parser.error("v2 calibration 只允许 E2 directional/task_only seed0。")
@@ -230,7 +277,7 @@ def _validate_authorization(legacy: bool) -> str | None:
             or data.get("证据文件SHA256", {}).get("B_ref") != _sha256(reference)
         ):
             parser.error("当前 v2 B_ref 与 v2 holdout 授权证据不一致。")
-    else:
+    elif args_cli.direction_protocol_version == "v2.2":
         reference = Path(args_cli.energy_reference_json or "").expanduser().resolve()
         evidence = data.get("证据文件", {})
         state_sha256 = evaluation_state_definition_sha256(MULTI_TERRAIN_HOLDOUT_STATE_SET)
@@ -243,6 +290,14 @@ def _validate_authorization(legacy: bool) -> str | None:
             or evidence.get("初始状态表SHA256") != state_sha256
         ):
             parser.error("v2.2 授权中的指标、B80或初始状态表哈希与当前评估不一致。")
+    else:
+        reference = Path(args_cli.energy_reference_json or "").expanduser().resolve()
+        if (
+            data.get("协议版本") != V2_3_PROTOCOL_VERSION
+            or not reference.is_file()
+            or data.get("预算冻结SHA256") != _sha256(reference)
+        ):
+            parser.error("v2.3 holdout 授权与当前协议或预算冻结文件不一致。")
     return _sha256(path)
 
 
@@ -253,6 +308,19 @@ def _validate_protocol(variant: str, method: str, terrain: str, legacy: bool) ->
         parser.error(f"评估批次必须位于 [0, {EVAL_BATCHES - 1}]。")
     if re.fullmatch(r"[0-9]{8}_[0-9]{6}", args_cli.batch_group) is None:
         parser.error("评估批次组必须是 YYYYMMDD_HHMMSS。")
+    if args_cli.direction_protocol_version == "v2.3":
+        expected_stage = "stage3" if args_cli.split == "calibration" else "stage6"
+        if args_cli.stage != expected_stage or terrain != "mixed":
+            parser.error(f"v2.3 {args_cli.split} 必须使用 {expected_stage}/mixed。")
+        expected_seed = v2_3_terrain_seed(args_cli.split)
+        if args_cli.terrain_seed != expected_seed:
+            parser.error(f"v2.3 {args_cli.split} 地形基准 seed 应为 {expected_seed}。")
+        if args_cli.split == "calibration":
+            if method != "task_only" or args_cli.ppo_seed != 0:
+                parser.error("v2.3 calibration 只允许 task_only seed0。")
+        elif args_cli.ppo_seed not in V2_3_FORMAL_SEEDS:
+            parser.error("v2.3 holdout PPO seed 只允许1、2、3。")
+        return
     if args_cli.stage == "stage1" and terrain == "mixed":
         parser.error("阶段一禁止 mixed。")
     if args_cli.stage == "stage2" and terrain != "mixed":
@@ -286,10 +354,43 @@ v2_references, v2_primary_reference, v2_reference_sha256 = _load_v2_reference(
 legacy_training_budget, legacy_reference_sha256 = _load_legacy_training_budget(method, terrain) if legacy else (None, None)
 authorization_sha256 = _validate_authorization(legacy)
 output_root = Path(args_cli.output_root).expanduser().resolve()
-batch_terrain_seed = evaluation_batch_seed(args_cli.terrain_seed, args_cli.batch_index)
+batch_terrain_seed = (
+    v2_3_evaluation_batch_seed(args_cli.split, args_cli.batch_index)
+    if args_cli.direction_protocol_version == "v2.3"
+    else evaluation_batch_seed(args_cli.terrain_seed, args_cli.batch_index)
+)
 checkpoint_source_protocol = (
     PROTOCOL_VERSION if "gpt_direction_v2_1_" in checkpoint.parent.name else ACTIVE_PROTOCOL_VERSION
 )
+
+
+def _load_v2_3_manifest() -> tuple[dict[str, dict[str, object]], str | None]:
+    if args_cli.direction_protocol_version != "v2.3":
+        if args_cli.manifest is not None:
+            parser.error("--manifest 只用于 v2.3 Mixed。")
+        return {}, None
+    if args_cli.manifest is None:
+        parser.error("v2.3 calibration/holdout 必须提供预先冻结的 manifest。")
+    path = Path(args_cli.manifest).expanduser().resolve()
+    if not path.is_file():
+        parser.error(f"v2.3 manifest 不存在：{path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if (
+        payload.get("冻结状态") != "已冻结"
+        or payload.get("manifest版本") != V2_3_MANIFEST_VERSION
+        or payload.get("协议版本") != V2_3_PROTOCOL_VERSION
+        or payload.get("数据拆分") != args_cli.split
+        or int(payload.get("回合数", -1)) != EVAL_EPISODES
+    ):
+        parser.error("v2.3 manifest 的状态、版本、拆分或回合数错误。")
+    episodes = payload.get("逐回合", [])
+    indexed = {str(item.get("episode_id")): item for item in episodes}
+    if len(indexed) != EVAL_EPISODES:
+        parser.error("v2.3 manifest episode ID 不唯一或不完整。")
+    return indexed, _sha256(path)
+
+
+v2_3_manifest_rows, v2_3_manifest_sha256 = _load_v2_3_manifest()
 
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
@@ -358,6 +459,7 @@ def _metadata() -> dict[str, object]:
         "评估批次组": args_cli.batch_group,
         "检查点": str(checkpoint),
         "检查点SHA256": _sha256(checkpoint),
+        "v2.3_manifest_SHA256": v2_3_manifest_sha256,
     }
 
 
@@ -375,6 +477,14 @@ def _write_staging(rows: list[dict[str, object]], record: dict[str, object]) -> 
         "逐回合": rows,
     }
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if args_cli.direction_protocol_version == "v2.3":
+        csv_path = directory / f"gpt-v2.3-Mixed-{args_cli.split}-batch-{args_cli.batch_index}.csv"
+        if csv_path.exists():
+            raise FileExistsError(f"拒绝覆盖 v2.3 批次CSV：{csv_path}")
+        with csv_path.open("w", encoding="utf-8-sig", newline="") as stream:
+            writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+            writer.writeheader()
+            writer.writerows(rows)
     print(f"[PACE-v2] 批次已写入：{path}", flush=True)
 
 
@@ -388,7 +498,11 @@ def _load_staged_rows() -> list[dict[str, object]]:
         payload = json.loads(path.read_text(encoding="utf-8"))
         expected = {
             **base_metadata,
-            "地形批次seed": evaluation_batch_seed(args_cli.terrain_seed, batch_index),
+            "地形批次seed": (
+                v2_3_evaluation_batch_seed(args_cli.split, batch_index)
+                if args_cli.direction_protocol_version == "v2.3"
+                else evaluation_batch_seed(args_cli.terrain_seed, batch_index)
+            ),
             "评估批次": batch_index,
         }
         if any(payload.get(key) != value for key, value in expected.items()):
@@ -553,6 +667,8 @@ def main() -> None:
     )
     if int(record.get("seed", -1)) != args_cli.ppo_seed:
         raise ValueError("检查点 PPO seed 与评估参数不一致。")
+    if args_cli.direction_protocol_version == "v2.3" and not bool(record.get("git_worktree_clean")):
+        raise ValueError("v2.3 正式 calibration/holdout 拒绝训练时工作树不干净的检查点。")
     if method == "fixed_weight":
         environment_path = checkpoint.parent / "gpt_环境配置.json"
         if not environment_path.is_file():
@@ -727,6 +843,8 @@ def main() -> None:
                     "实验变体": variant,
                     "方法": method,
                     "回合": global_episode_id,
+                    "episode_id": f"{args_cli.split}-{global_episode_id:04d}",
+                    "batch_id": f"{args_cli.split}-batch-{args_cli.batch_index}",
                     "环境编号": env_id,
                     "评估批次": args_cli.batch_index,
                     "评估批次组": args_cli.batch_group,
@@ -739,8 +857,12 @@ def main() -> None:
                     "地形实例编号": evaluation_global_id(args_cli.batch_index, local_instance_id),
                     "地形类别": category,
                     "方向": terrain_direction,
+                    "方向子任务": v2_3_subtask_name(category, terrain_direction),
                     "难度": level_label,
+                    "难度层编号": level,
                     "难度连续值": float(difficulties[level, terrain_type]),
+                    "方向指令世界坐标": list(DESIRED_DIRECTION_W),
+                    "目标速度_m_s": TARGET_SPEED_M_S_V2,
                     "完整20秒": timed_out,
                     "非法终止": illegal,
                     "生存成功": survival,
@@ -800,6 +922,32 @@ def main() -> None:
     if len(rows) != EVAL_NUM_ENVS:
         wrapped.close()
         raise RuntimeError(f"本批评估未收齐：{len(rows)}/{EVAL_NUM_ENVS}")
+    if args_cli.direction_protocol_version == "v2.3":
+        for row in rows:
+            expected = v2_3_manifest_rows.get(str(row["episode_id"]))
+            actual = {
+                "batch_index": int(row["评估批次"]),
+                "batch_env_number": int(row["环境编号"]),
+                "batch_id": row["batch_id"],
+                "terrain_category": row["地形类别"],
+                "direction": row["方向"],
+                "subtask": row["方向子任务"],
+                "difficulty_level": int(row["难度层编号"]),
+                "terrain_seed": int(row["地形seed"]),
+                "batch_seed": int(row["地形批次seed"]),
+                "initial_state_number": int(row["固定初始状态编号"]),
+                "protocol_version": row["协议版本"],
+                "initial_state_set": row["评估初始状态集"],
+                "initial_state_set_sha256": row["评估初始状态集SHA256"],
+                "direction_command_w": row["方向指令世界坐标"],
+                "target_speed_m_s": float(row["目标速度_m_s"]),
+            }
+            if expected is None or any(expected[key] != value for key, value in actual.items()):
+                wrapped.close()
+                raise RuntimeError(f"评估结果未严格匹配 manifest：{row['episode_id']}/{actual}")
+            if abs(float(expected["difficulty"]) - float(row["难度连续值"])) > 1.0e-12:
+                wrapped.close()
+                raise RuntimeError(f"评估难度未匹配 manifest：{row['episode_id']}")
     if args_cli.stage == "stage1" and any(row["地形类别"] != terrain for row in rows):
         wrapped.close()
         raise RuntimeError("评估结果包含模型对应类别以外的地形，拒绝写出正式批次。")
