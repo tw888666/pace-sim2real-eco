@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""适配只读回放器，录制 v2.3 Mixed 授权模型的固定平地实例。"""
+"""适配只读回放器，录制 v2.3 Mixed 授权模型的固定地形实例。"""
 
 from __future__ import annotations
 
@@ -21,7 +21,8 @@ def replace_once(old: str, new: str) -> None:
 replace_once(
     'parser.add_argument("--energy_reference_json", default=None)',
     'parser.add_argument("--energy_reference_json", required=True)\n'
-    'parser.add_argument("--holdout_authorization", required=True)',
+    'parser.add_argument("--holdout_authorization", required=True)\n'
+    'parser.add_argument("--scene", choices=("flat", "boxes", "stairs_up"), default="flat")',
 )
 replace_once(
     "from pace_eco_lab.multi_terrain_protocol import (\n"
@@ -103,7 +104,7 @@ replace_once(
 )
 replace_once(
     'final_video = output_dir / "gpt_多地形策略回放.mp4"',
-    'final_video = output_dir / f"gpt_v2.3_Mixed_flat_{method}_seed{args_cli.ppo_seed}_holdout回放.mp4"',
+    'final_video = output_dir / f"gpt_v2.3_Mixed_{args_cli.scene}_{method}_seed{args_cli.ppo_seed}_holdout回放.mp4"',
 )
 replace_once(
     "    category, direction, difficulty = metadata_labels(\n"
@@ -118,8 +119,9 @@ replace_once(
     "        level,\n"
     "        EVAL_TERRAIN_ROWS,\n"
     "    )\n"
-    '    if category != "flat" or direction != "level":\n'
-    '        raise RuntimeError(f"固定录像实例不是平地level：{category}/{direction}")',
+    '    expected_scene = {"flat": ("flat", "level", 2), "boxes": ("boxes", "level", 32), "stairs_up": ("stairs", "up", 22)}[args_cli.scene]\n'
+    '    if (category, direction, formal_env_index) != expected_scene:\n'
+    '        raise RuntimeError(f"固定录像实例与{args_cli.scene}不匹配：{category}/{direction}/env{formal_env_index}")',
 )
 replace_once(
     '        "任务": args_cli.task,',
@@ -131,11 +133,11 @@ replace_once(
     '        "B_ref文件SHA256": reference_sha256,',
     '        "预算冻结文件SHA256": reference_sha256,\n'
     '        "holdout授权SHA256": authorization_sha256,\n'
-    '        "固定录像选择规则": "PPO seed1、holdout batch0/env2；Mixed网格flat/level中等难度，不按表现挑选",',
+    '        "固定录像选择规则": f"PPO seed1、holdout batch0/env{formal_env_index}；Mixed网格{category}/{direction}中等难度，不按表现挑选",',
 )
 replace_once(
     'report_path = output_dir / "gpt_多地形策略回放说明.json"',
-    'report_path = output_dir / f"gpt_v2.3_Mixed_flat_{method}_seed{args_cli.ppo_seed}_holdout回放说明.json"',
+    'report_path = output_dir / f"gpt_v2.3_Mixed_{args_cli.scene}_{method}_seed{args_cli.ppo_seed}_holdout回放说明.json"',
 )
 
 exec(compile(source, str(source_path), "exec"), {"__name__": "__main__", "__file__": str(source_path)})
