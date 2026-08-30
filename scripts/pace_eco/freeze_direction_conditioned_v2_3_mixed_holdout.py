@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import re
 from datetime import datetime
 from pathlib import Path
 
@@ -20,9 +19,8 @@ from pace_eco_lab.direction_conditioned_v2_3_mixed_protocol import (
     TRAINING_UPDATES,
     terrain_seed,
 )
+from pace_eco_lab.training_log_audit import audit_training_log
 
-
-FAILURE = re.compile(r"Traceback|CUDA out of memory|\bOOM\b|NaN|Segmentation fault|Aborted", re.I)
 
 parser = argparse.ArgumentParser(description="冻结 v2.3 Mixed 九模型 holdout 授权。")
 parser.add_argument("--rsl_root", required=True)
@@ -119,16 +117,17 @@ def main() -> None:
             if method == "eco" and (abs(weight) > 1.0e-12 or "lagrangian" not in class_name or abs(float(algorithm.get("energy_budget_j", 0.0)) - b80) > 1.0e-9):
                 raise ValueError("ECO没有使用唯一冻结Mixed B80。")
             token = f"formal_train_{method}_seed{seed}_"
-            valid_logs = []
+            valid_logs: list[tuple[Path, dict[str, object]]] = []
             for path in launch_root.rglob("*.log"):
                 if token not in path.name:
                     continue
                 text = path.read_text(encoding="utf-8", errors="replace")
-                if "Learning iteration 2999/3000" in text and FAILURE.search(text) is None:
-                    valid_logs.append(path)
+                audit = audit_training_log(text)
+                if "Learning iteration 2999/3000" in text and audit["状态"] == "通过":
+                    valid_logs.append((path, audit))
             if not valid_logs:
-                raise RuntimeError(f"缺少完成0--2999且无OOM/NaN/异常的日志：{method}/seed{seed}")
-            log = sorted(valid_logs)[-1]
+                raise RuntimeError(f"缺少完成0--2999且无致命错误/优化非有限值的日志：{method}/seed{seed}")
+            log, log_audit = sorted(valid_logs, key=lambda item: item[0])[-1]
             models.append({
                 "任务": task, "方法": method, "PPO_seed": seed,
                 "训练地形seed": terrain_seed("formal_train", seed),
@@ -138,6 +137,7 @@ def main() -> None:
                 "算法配置": str(agent_path), "算法配置SHA256": _sha256(agent_path),
                 "配置指纹": str(fingerprint_path), "配置指纹SHA256": _sha256(fingerprint_path),
                 "训练日志": str(log), "训练日志SHA256": _sha256(log),
+                "训练日志审计": log_audit,
             })
     if len(models) != 9 or len({(item["方法"], item["PPO_seed"]) for item in models}) != 9:
         raise RuntimeError("九模型矩阵不完整或重复。")
