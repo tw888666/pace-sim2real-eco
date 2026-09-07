@@ -9,6 +9,14 @@ import torch
 from pace_eco_lab.constants import ELECTRICAL_COEFFICIENT, GRAVITY_M_S2
 
 
+def velocity_normalization(target_planar_velocity: torch.Tensor) -> torch.Tensor:
+    """论文 v2 Eq. (15)：``gamma_v = 1 / (||v_hat_B||^2 + 1)``。"""
+
+    if target_planar_velocity.ndim < 2 or target_planar_velocity.shape[-1] != 2:
+        raise ValueError("目标平面速度必须具有 [..., 2] 形状。")
+    return torch.reciprocal(torch.sum(target_planar_velocity.square(), dim=-1) + 1.0)
+
+
 @dataclass(frozen=True)
 class EnergyComponents:
     """每个环境的功率或能量三分量。"""

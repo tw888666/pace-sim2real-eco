@@ -3,7 +3,22 @@ from __future__ import annotations
 import pytest
 import torch
 
-from pace_eco_lab.mdp.energy import compute_energy_components, integrate_energy_components
+from pace_eco_lab.mdp.energy import (
+    compute_energy_components,
+    integrate_energy_components,
+    velocity_normalization,
+)
+
+
+def test_paper_v2_velocity_normalization():
+    target_velocity = torch.tensor([[0.0, 0.0], [1.0, 0.0], [3.0, 4.0]])
+    gamma_v = velocity_normalization(target_velocity)
+    torch.testing.assert_close(gamma_v, torch.tensor([1.0, 0.5, 1.0 / 26.0]))
+
+
+def test_velocity_normalization_rejects_non_planar_shape():
+    with pytest.raises(ValueError, match="目标平面速度"):
+        velocity_normalization(torch.zeros(2, 3))
 
 
 def test_zero_torque_has_only_potential_power():

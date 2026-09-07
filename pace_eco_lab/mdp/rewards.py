@@ -13,6 +13,7 @@ from isaaclab.sensors import ContactSensor
 
 from pace_eco_lab.rl.schedules import penalty_coefficient
 
+from .energy import velocity_normalization
 from .ftd import FootTouchdownHistory
 from .joint_limits import joint_limit_collision_indicator
 
@@ -135,12 +136,19 @@ class PaceFootTouchdownPenalty(ManagerTermBase):
 
 def scheduled_energy_reward(
     env: ManagerBasedRLEnv,
+    command_name: str,
     half_life_iterations: float = 500.0,
 ) -> torch.Tensor:
-    """固定权重基线使用的 PACE 能耗调度项。"""
+    """论文 v2 Eq. (15–16) 的速度归一化 PACE 能耗调度项。"""
 
     schedule = penalty_coefficient(
         int(getattr(env, "pace_learning_iteration", 0)),
         half_life_iterations,
     )
-    return env.pace_energy_step * schedule / env.step_dt
+    command_term = env.command_manager.get_term(command_name)
+    if hasattr(command_term, "direction_w") and hasattr(command_term, "target_speed"):
+        target_planar_velocity = command_term.direction_w * command_term.target_speed
+    else:
+        target_planar_velocity = env.command_manager.get_command(command_name)[:, :2]
+    gamma_v = velocity_normalization(target_planar_velocity)
+    return gamma_v * env.pace_energy_step * schedule / env.step_dt

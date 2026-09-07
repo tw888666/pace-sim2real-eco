@@ -14,8 +14,10 @@ def ground_friction(
     env: ManagerBasedEnv,
     value: float,
 ) -> torch.Tensor:
-    """返回固定地面动摩擦系数，形状为 ``[num_envs, 1]``。"""
+    """返回实际动摩擦系数；未启用随机化时回退到固定值。"""
 
+    if hasattr(env, "pace_ground_friction"):
+        return env.pace_ground_friction
     return torch.full((env.num_envs, 1), value, device=env.device)
 
 

@@ -28,11 +28,14 @@ from pace_eco_lab.constants import (
     EPISODE_LENGTH_S,
     GLOBAL_DELAY_STEPS,
     GROUND_DYNAMIC_FRICTION,
+    GROUND_FRICTION_RANDOMIZATION_RANGE,
     GROUND_STATIC_FRICTION,
     PACE_JOINT_NAMES,
     PD_DAMPING,
     PD_STIFFNESS,
     PHYSICS_DT_S,
+    PUSH_INTERVAL_RANGE_S,
+    PUSH_VELOCITY_RANGE_M_S,
     SATURATION_EFFORT_NM,
     VELOCITY_LIMIT_RAD_S,
 )
@@ -40,6 +43,7 @@ from pace_eco_lab.mdp.actions import PaceJointPositionActionCfg
 from pace_eco_lab.mdp.actuator import PaceDelayedPDActuatorCfg
 from pace_eco_lab.mdp.observations import binary_foot_contacts, ground_friction, joint_observation_in_pace_order
 from pace_eco_lab.mdp.parameters import load_pace_parameters, named_joint_values
+from pace_eco_lab.mdp.randomization import randomize_ground_friction
 from pace_eco_lab.mdp.rewards import (
     PaceFootTouchdownPenalty,
     pace_collision_indicator,
@@ -226,14 +230,25 @@ class ObservationsCfg:
 @configclass
 class EventsCfg:
     physics_material = EventTerm(
-        func=base_mdp.randomize_rigid_body_material,
+        func=randomize_ground_friction,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
-            "static_friction_range": (GROUND_STATIC_FRICTION, GROUND_STATIC_FRICTION),
-            "dynamic_friction_range": (GROUND_DYNAMIC_FRICTION, GROUND_DYNAMIC_FRICTION),
-            "restitution_range": (0.0, 0.0),
-            "num_buckets": 1,
+            "static_friction_range": GROUND_FRICTION_RANDOMIZATION_RANGE,
+            "dynamic_friction_range": GROUND_FRICTION_RANDOMIZATION_RANGE,
+            "restitution": 0.0,
+        },
+    )
+    push_robot = EventTerm(
+        func=base_mdp.push_by_setting_velocity,
+        mode="interval",
+        interval_range_s=PUSH_INTERVAL_RANGE_S,
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "velocity_range": {
+                "x": PUSH_VELOCITY_RANGE_M_S,
+                "y": PUSH_VELOCITY_RANGE_M_S,
+            },
         },
     )
     reset_base = EventTerm(
@@ -292,7 +307,7 @@ class RewardsCfg:
     energy = RewTerm(
         func=scheduled_energy_reward,
         weight=0.0,
-        params={"half_life_iterations": 500.0},
+        params={"command_name": "base_velocity", "half_life_iterations": 500.0},
     )
 
 
@@ -355,6 +370,14 @@ def configure_evaluation(
     """关闭观察随机性并选择确定性状态集，供评估使用。"""
 
     env_cfg.observations.policy.enable_corruption = False
+    # 正式评估固定环境条件；任务随机化只用于训练。
+    env_cfg.events.push_robot = None
+    env_cfg.events.physics_material.params = {
+        "asset_cfg": SceneEntityCfg("robot", body_names=".*"),
+        "static_friction_range": (GROUND_STATIC_FRICTION, GROUND_STATIC_FRICTION),
+        "dynamic_friction_range": (GROUND_DYNAMIC_FRICTION, GROUND_DYNAMIC_FRICTION),
+        "restitution": 0.0,
+    }
     env_cfg.events.reset_base.func = reset_root_state_from_evaluation_set
     env_cfg.events.reset_base.params = {
         "state_set": state_set,

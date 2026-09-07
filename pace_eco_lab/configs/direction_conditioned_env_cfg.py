@@ -18,6 +18,7 @@ from pace_eco_lab.mdp.direction_command import DirectionCommandCfg
 from pace_eco_lab.mdp.rewards import (
     pace_directional_velocity_tracking,
     pace_yaw_rate_tracking,
+    scheduled_energy_reward,
 )
 
 
@@ -71,6 +72,11 @@ class DirectionalRewardsCfg(RewardsCfg):
         func=pace_yaw_rate_tracking,
         weight=0.2,
         params={"target_yaw_rate": 0.0, "sigma": 0.5},
+    )
+    energy = RewTerm(
+        func=scheduled_energy_reward,
+        weight=0.0,
+        params={"command_name": "direction_command", "half_life_iterations": 500.0},
     )
 
 

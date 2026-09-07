@@ -134,6 +134,20 @@ def test_v2_environment_source_preserves_e1_reward_and_equal_e2_scale():
     assert 'params={"command_name": "direction_command", "sigma": 0.5}' in source
     assert 'params={"target_yaw_rate": 0.0, "sigma": 0.5}' in source
     assert "velocity = None" in source
+    assert '"command_name": "direction_command"' in source
+
+
+def test_paper_v2_energy_actuator_and_task_randomization_are_configured():
+    reward_source = (ROOT / "pace_eco_lab/mdp/rewards.py").read_text(encoding="utf-8")
+    env_source = (ROOT / "pace_eco_lab/configs/env_cfg.py").read_text(encoding="utf-8")
+    constants_source = (ROOT / "pace_eco_lab/constants.py").read_text(encoding="utf-8")
+    assert "gamma_v * env.pace_energy_step" in reward_source
+    assert "randomize_ground_friction" in env_source
+    assert "push_by_setting_velocity" in env_source
+    assert "env_cfg.events.push_robot = None" in env_source
+    assert "EFFORT_LIMIT_NM = 89.0" in constants_source
+    assert "SATURATION_EFFORT_NM = 140.0" in constants_source
+    assert "VELOCITY_LIMIT_RAD_S = 8.5" in constants_source
 
 
 def test_direction_command_uses_yaw_only_body_transform_and_three_values():
